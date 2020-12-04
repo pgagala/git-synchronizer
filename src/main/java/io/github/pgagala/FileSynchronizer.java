@@ -14,9 +14,7 @@ class FileSynchronizer {
         Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("file-synchronizer-thread-%d").build());
     private final FileWatcher fileWatcher;
 
-    public FileSynchronizer(FileWatcher fileWatcher) {
-        this.fileWatcher = fileWatcher;
-    }
+
 
     void run() throws IOException, InterruptedException {
         executorService.submit(() -> {
@@ -30,7 +28,7 @@ class FileSynchronizer {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-            }
+  ą          }
         });
     }
 }

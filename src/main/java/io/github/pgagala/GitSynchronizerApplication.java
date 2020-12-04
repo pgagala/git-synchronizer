@@ -1,6 +1,7 @@
 package io.github.pgagala;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 
 class GitSynchronizerApplication {
     // paths to listening on defined via args to main, commit interval as well. SSH should be earlier set up.ą
@@ -18,7 +19,7 @@ class GitSynchronizerApplication {
     // only after updating watched file)
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        FileWatcher fileWatcher = new FileWatcher();
+        FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService());
         fileWatcher.run();
         new FileSynchronizer(fileWatcher).run();
         System.out.println("App started");

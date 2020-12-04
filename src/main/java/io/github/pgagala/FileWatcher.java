@@ -3,7 +3,6 @@ package io.github.pgagala;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
@@ -21,24 +20,26 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 class FileWatcher {
 
-    LinkedBlockingQueue<WatchEvent<?>> linkedBlockingQueue = new LinkedBlockingQueue<>();
-    ExecutorService executorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("file-watcher-thread-%d").build());
+    private final LinkedBlockingQueue<WatchEvent<?>> linkedBlockingQueue = new LinkedBlockingQueue<>();
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("file-watcher-thread-%d").build());
+    private final WatchService watchService;
 
-    void run() throws IOException, InterruptedException {
-        WatchService watchService = FileSystems.getDefault().newWatchService();
+    public FileWatcher(WatchService watchService) {
+        this.watchService = watchService;
+    }
+
+    void run() throws IOException {
         Path path = Paths.get("c:\\Trash");
         Path path2 = Paths.get("c:\\Trash\\file_.txt");
         path.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
         executorService.submit(() -> {
             boolean poll = true;
             while (poll) {
-                WatchKey key = null;
+                WatchKey key;
                 try {
                     key = watchService.take();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
-                }
-                if (key == null) {
                     continue;
                 }
                 List<WatchEvent<?>> watchEvents = key.pollEvents();
@@ -54,10 +55,10 @@ class FileWatcher {
     List<WatchEvent<?>> occurredEvents() {
         List<WatchEvent<?>> events = new ArrayList<>();
         linkedBlockingQueue.drainTo(events);
-        return flattenEvents(events);
+        return removeDuplicatedEvents(events);
     }
 
-    private List<WatchEvent<?>> flattenEvents(List<WatchEvent<?>> watchEvents) {
+    private List<WatchEvent<?>> removeDuplicatedEvents(List<WatchEvent<?>> watchEvents) {
         return watchEvents.stream()
             .reduce(new ArrayList<>(),
                 (flattenEvents, event) -> {
