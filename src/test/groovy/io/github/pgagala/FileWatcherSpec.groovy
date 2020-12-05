@@ -16,7 +16,6 @@ class FileWatcherSpec extends Specification {
     public static String PATH = "c:\\SomeFolder"
     public static final String FILE1 = "file1"
     public static final String FILE2 = "file2"
-    private PollingConditions event = new PollingConditions(timeout: 2)
 
     def "occurredEvents should returned events without duplication"() {
         given: "Watch service which returned particular events"
@@ -32,7 +31,7 @@ class FileWatcherSpec extends Specification {
             fileWatcher.run()
 
         then: "Events without duplication in correct order are returned"
-            event.eventually {
+            new PollingConditions(timeout: 2).eventually {
                 assert eventsSame(flattenedEvents, fileWatcher.occurredEvents())
             }
 
