@@ -1,8 +1,7 @@
 plugins {
     id 'java'
+    id 'groovy'
 }
-
-apply plugin: 'groovy'
 
 group 'org.example'
 version '1.0-SNAPSHOT'
@@ -14,8 +13,11 @@ repositories {
 dependencies {
     compile group: 'com.google.guava', name: 'guava', version: '30.0-jre'
     testCompile(
-            'junit:junit:4.12',
-            'org.codehaus.groovy:groovy-all:2.4.11',
-            'org.spockframework:spock-core:1.1-groovy-2.4'
+            'org.codehaus.groovy:groovy-all:3.0.7',
+            'org.spockframework:spock-core:2.0-M4-groovy-3.0'
     )
+}
+
+test {
+    useJUnitPlatform()
 }
