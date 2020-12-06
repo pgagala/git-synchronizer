@@ -14,7 +14,8 @@ dependencies {
     compile group: 'com.google.guava', name: 'guava', version: '30.0-jre'
     testCompile(
             'org.codehaus.groovy:groovy-all:3.0.7',
-            'org.spockframework:spock-core:2.0-M4-groovy-3.0'
+            'org.spockframework:spock-core:2.0-M4-groovy-3.0',
+            'org.testcontainers:spock:1.15.0'
     )
 }
 

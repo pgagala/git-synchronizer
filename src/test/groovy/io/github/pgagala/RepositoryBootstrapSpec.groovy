@@ -1,9 +1,6 @@
 package io.github.pgagala
 
-import spock.lang.Specification
-
-
-class RepositoryBootstrapSpec extends Specification {
+class RepositoryBootstrapSpec extends IntegrationSpec {
 
     def "On system start repository should be initialized if repo doesn't exist"() {
     expect:
