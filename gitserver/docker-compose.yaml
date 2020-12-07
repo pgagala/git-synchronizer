@@ -7,5 +7,5 @@ services:
     restart: always
     ports:
       - "8080:80"
-    volumes:
-      - ./repos:/var/www/git
+#    volumes:
+#      - ./repos:/var/www/git

@@ -1,12 +1,12 @@
 FROM ubuntu:18.04
 RUN apt update 2>/dev/null
-RUN apt install -y git apache2 apache:q2-utils 2>/dev/null
+RUN apt install -y git apache2 apache2-utils 2>/dev/null
 RUN a2enmod env cgi alias rewrite
 RUN mkdir /var/www/git
 RUN chown -Rfv www-data:www-data /var/www/git
 COPY ./etc/git.conf /etc/apache2/sites-available/git.conf
-#COPY ./etc/git-create-repo.sh /usr/bin/mkrepo
-#RUN chmod +x /usr/bin/mkrepo
+COPY ./etc/git-create-repo.sh /usr/bin/mkrepo
+RUN chmod +x /usr/bin/mkrepo
 RUN a2dissite 000-default.conf
 RUN a2ensite git.conf
 RUN git config --system http.receivepack true
