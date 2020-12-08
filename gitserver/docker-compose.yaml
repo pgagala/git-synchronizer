@@ -1,5 +1,7 @@
 version: "3.7"
 services:
+  git:
+    image: alpine/git:latest
   git-server:
     build:
       dockerfile: gitserver.Dockerfile
