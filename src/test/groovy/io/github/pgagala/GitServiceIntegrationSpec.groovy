@@ -27,12 +27,11 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             gitService.deleteRepository()
 
         then: "Git repository doesn't exist"
-            folderUnderRandomPath.listFiles().size() == 0
+            folderUnderRandomPath.listFiles() == null
     }
 
     def gitServiceForPath(String path) {
         GitService gitService = new GitService(path)
-        gitService.createRepository()
 
         return gitService
     }

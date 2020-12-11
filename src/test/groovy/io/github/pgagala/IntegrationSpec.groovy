@@ -13,6 +13,7 @@ abstract class IntegrationSpec extends Specification {
 //                .withExposedService("git-server", 8081)
         .withBuild(true)
                 .withServices("git-server","git")
+        .withRemoveImages(DockerComposeContainer.RemoveImages.ALL)
         .waitingFor("git-server", Wait.forListeningPort())
         .waitingFor("git", Wait.forListeningPort())
 //        .waitingFor("git", Wait.forHealthcheck())
