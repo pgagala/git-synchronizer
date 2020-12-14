@@ -15,7 +15,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
         given: "Git service for random path"
             folderUnderRandomPath = Files.createTempDirectory("test_repo_" + RandomStringUtils.randomAlphabetic(4) + "_").toFile()
             FileUtils.forceDeleteOnExit(folderUnderRandomPath)
-            GitService gitService = gitServiceForPath(folderUnderRandomPath.getPath())
+            GitService gitService = new GitService(folderUnderRandomPath.getPath())
 
         when: "Git is initialized"
             gitService.createRepository()
@@ -30,9 +30,8 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             folderUnderRandomPath.listFiles() == null
     }
 
-    def gitServiceForPath(String path) {
-        GitService gitService = new GitService(path)
+    def "Committed files should be present on connected remote git server"() {
 
-        return gitService
     }
+
 }
