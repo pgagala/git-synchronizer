@@ -1,0 +1,3 @@
+moduleName=File extension module
+moduleVersion=1.0
+extensionClasses=io.github.pgagala.FileExtension

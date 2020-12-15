@@ -9,14 +9,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import static org.apache.commons.io.FileUtils.forceDeleteOnExit;
+
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Slf4j
 class FileManager {
 
     File targetFilePath;
 
-    FileManager(String targetPath) {
+    FileManager(String targetPath) throws IOException {
         this.targetFilePath = new File(targetPath);
+         forceDeleteOnExit(targetFilePath);
     }
 
     void delete(File file) {
@@ -31,10 +34,10 @@ class FileManager {
         files.forEach(file -> {
             try {
                 if(file.isDirectory()) {
-                    FileUtils.copyDirectory(file, targetFilePath);
+                    FileUtils.copyDirectoryToDirectory(file, targetFilePath);
                 }
                 else {
-                    FileUtils.copyFile(file, targetFilePath);
+                    FileUtils.copyFileToDirectory(file, targetFilePath, true);
                 }
             } catch (IOException exc) {
                 log.error("Unsuccessful copying file: {} to path: {}.", file.getAbsolutePath(), targetFilePath.getAbsolutePath(), exc);

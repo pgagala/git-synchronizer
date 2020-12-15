@@ -11,10 +11,17 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
     @Shared
     File folderUnderRandomPath
 
+    def setup() {
+        folderUnderRandomPath = Files.createTempDirectory("test_repo_" + RandomStringUtils.randomAlphabetic(4) + "_").toFile()
+    }
+
+    def cleanup() {
+        FileUtils.forceDelete(folderUnderRandomPath)
+    }
+
     def "Git repository should be initialized and deleted"() {
         given: "Git service for random path"
-            folderUnderRandomPath = Files.createTempDirectory("test_repo_" + RandomStringUtils.randomAlphabetic(4) + "_").toFile()
-            FileUtils.forceDeleteOnExit(folderUnderRandomPath)
+
             GitService gitService = new GitService(folderUnderRandomPath.getPath())
 
         when: "Git is initialized"

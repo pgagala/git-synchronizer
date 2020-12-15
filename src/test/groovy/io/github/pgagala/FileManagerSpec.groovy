@@ -7,6 +7,7 @@ import spock.lang.Specification
 import java.nio.file.Files
 import java.nio.file.Path
 
+import static org.apache.commons.io.FileUtils.forceDelete
 
 class FileManagerSpec extends Specification {
 
@@ -15,8 +16,7 @@ class FileManagerSpec extends Specification {
     String fileManagerTargetPath
 
     def setup() {
-        def targetFile = Files.createTempDirectory("test_repo_" + RandomStringUtils.randomAlphabetic(4) + "_").toFile()
-        targetFile.deleteOnExit()
+        def targetFile = Files.createTempDirectory("testRepo_" + RandomStringUtils.randomAlphabetic(4) + "_").toFile()
         fileManagerTargetPath = targetFile.getAbsolutePath()
         fileManager = new FileManager(fileManagerTargetPath)
     }
@@ -30,6 +30,9 @@ class FileManagerSpec extends Specification {
 
         then: "File doesn't exist"
             !file.exists()
+
+        cleanup:
+            if(file.exists()) {forceDelete(file)}
 
         where:
             file << [dirWithContent(), file()]
@@ -45,29 +48,30 @@ class FileManagerSpec extends Specification {
 
         then: "Files exist under target path"
             targetPathFile.listFiles().size() == size
-            targetPathFile.listFiles().toList() == files
+            targetPathFile.listFiles().each {
+                for (File file : files)
+                    it.shallowEquals(file)
+            }
+
+        cleanup:
+            files.each { forceDelete(it) }
+            forceDelete(targetPathFile)
 
         where:
-            files << [[dirWithContent()], [file()], [dirWithContent(), file()]]
+            files << [[dirWithContent(), file()], [dirWithContent()], [file()]]
             size = files.size()
     }
 
-    static File dirWithContent() {
+    File dirWithContent() {
         def dir = Files.createTempDirectory("testDir_" + RandomStringUtils.randomAlphabetic(4)).toFile()
-        dir.deleteOnExit()
-        def dir2 = Files.createDirectory(Path.of(dir.getAbsolutePath().toString(), "/subDir")).toFile()
-        dir2.deleteOnExit()
-        def file = new File(dir2, "testFile")
-        file.createNewFile()
-        file.deleteOnExit()
+        Files.createDirectory(Path.of(dir.getAbsolutePath().toString(), "/subDir")).toFile()
 
         return dir
     }
 
-    static File file() {
-        def file = Files.createTempFile("tesFile_${RandomStringUtils.randomAlphabetic(4)}", RandomStringUtils.randomAlphabetic(4)).toFile()
+    File file() {
+        def file = Files.createTempFile("testFile_${RandomStringUtils.randomAlphabetic(4)}", RandomStringUtils.randomAlphabetic(4)).toFile()
         file.createNewFile()
-        file.deleteOnExit()
 
         return file
     }
