@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Creating/destroying temporary git repository (point of file synchronization with remote). Using docker to run git commands.
@@ -17,7 +18,10 @@ import java.io.IOException;
 @Slf4j
 class GitService {
 
+    private static final String DOCKER = "docker";
+    private static final String[] DOCKER_GIT_INVOCATION_PREFIX = {DOCKER, "run", "--name", "git-service", "alpine/git"};
     String gitRepositoryPath;
+    String gitServerRemote;
 
     void createRepository() throws IOException, InterruptedException {
         log.info("Creating repository under path: {}. Files will be synchronized in that repository. " +
@@ -25,47 +29,71 @@ class GitService {
         try {
             initRepository();
             copyRepositoryToLocalHost();
-            removeGitContainer();
+            addRemote();
         } catch (Exception exc) {
             log.error("Exception during creating repository: {}", exc.getMessage());
             throw exc;
         }
     }
 
-    private void removeGitContainer() throws IOException, InterruptedException {
-        Process removeGitServiceContainer = new ProcessBuilder()
-            .command("docker", "rm", "git-service")
-            .start();
+    private void addRemote() throws IOException, InterruptedException {
+        executeProcess(new ProcessBuilder()
+            .command(DOCKER, "remote", "add", "origin", gitServerRemote));
+    }
 
-        executeAndWaitUntilFinished(removeGitServiceContainer);
+    private void removeGitContainer() throws IOException, InterruptedException {
+        executeProcess(new ProcessBuilder()
+            .command(DOCKER, "rm", "git-service"));
     }
 
     private void copyRepositoryToLocalHost() throws IOException, InterruptedException {
-        Process copyRepositoryToLocalHost = new ProcessBuilder()
-            .command("docker", "cp", "git-service:git/.git", gitRepositoryPath)
-            .start();
-        executeAndWaitUntilFinished(copyRepositoryToLocalHost);
+        executeProcess(new ProcessBuilder()
+            .command(DOCKER, "cp", "git-service:git/.git", gitRepositoryPath));
     }
 
     private void initRepository() throws IOException, InterruptedException {
-        Process initRepository = new ProcessBuilder()
-            .command("docker", "run", "--name", "git-service", "alpine/git", "init")
-            .start();
-
-        executeAndWaitUntilFinished(initRepository);
+        executeProcess(new ProcessBuilder()
+            .command(getDockerGitCommand("init")));
     }
 
-    void deleteRepository() throws IOException {
+    void deleteRepository() throws IOException, InterruptedException {
         File repositoryFolder = new File(gitRepositoryPath);
         try {
             FileUtils.forceDelete(repositoryFolder);
-        } catch (IOException exc) {
-            log.error("Unsuccessful deleting repository under path: {}", gitRepositoryPath);
+            removeGitContainer();
+        } catch (IOException | InterruptedException exc) {
+            log.error("Unsuccessful deleting repository under path: {}", gitRepositoryPath, exc);
             throw exc;
         }
     }
 
+    void commitChanges(FilesChanges fileChanges) throws IOException, InterruptedException {
+        StringBuilder commitMessageBuilder = new StringBuilder();
+        fileChanges.forEach(f -> commitMessageBuilder.append(f.getLogMessage()).append("/n"));
+
+        executeProcess(new ProcessBuilder()
+            .command(getDockerGitCommand("add .")));
+
+        executeProcess(new ProcessBuilder()
+            .command(getDockerGitCommand("commit -m " + commitMessageBuilder.toString())));
+
+        executeProcess(new ProcessBuilder()
+            .command(getDockerGitCommand("push origin")));
+    }
+
+    private static String[] getDockerGitCommand(String gitCommand) {
+        String[] commandSuffix = gitCommand.split(" ");
+        String[] fullCommand = Arrays.copyOf(DOCKER_GIT_INVOCATION_PREFIX, DOCKER_GIT_INVOCATION_PREFIX.length + commandSuffix.length);
+        System.arraycopy(commandSuffix, 0, fullCommand, DOCKER_GIT_INVOCATION_PREFIX.length, commandSuffix.length);
+        return fullCommand;
+    }
+
+    private void executeProcess(ProcessBuilder processBuilder) throws IOException, InterruptedException {
+        executeAndWaitUntilFinished(processBuilder.start());
+    }
+
     private void executeAndWaitUntilFinished(Process process) throws InterruptedException {
+
         int responseCode = process.waitFor();
         if (responseCode != 0) {
             log.error("Unsuccessful process execution: {}", process);

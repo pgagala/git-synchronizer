@@ -20,6 +20,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 class FileWatcher {
     //TODO integration to test changes from differents places
+    //TODO cannot add files with same name from different paths
     private final LinkedBlockingQueue<WatchEvent<?>> linkedBlockingQueue = new LinkedBlockingQueue<>();
     private final ExecutorService executorService;
     private final WatchService watchService;

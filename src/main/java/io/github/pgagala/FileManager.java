@@ -19,7 +19,11 @@ class FileManager {
 
     FileManager(String targetPath) throws IOException {
         this.targetFilePath = new File(targetPath);
-         forceDeleteOnExit(targetFilePath);
+        forceDeleteOnExit(targetFilePath);
+    }
+
+    void delete(List<File> files) {
+        files.forEach(this::delete);
     }
 
     void delete(File file) {
@@ -31,18 +35,19 @@ class FileManager {
     }
 
     void copy(List<File> files) {
-        files.forEach(file -> {
-            try {
-                if(file.isDirectory()) {
-                    FileUtils.copyDirectoryToDirectory(file, targetFilePath);
-                }
-                else {
-                    FileUtils.copyFileToDirectory(file, targetFilePath, true);
-                }
-            } catch (IOException exc) {
-                log.error("Unsuccessful copying file: {} to path: {}.", file.getAbsolutePath(), targetFilePath.getAbsolutePath(), exc);
+        files.forEach(this::copy);
+    }
+
+    void copy(File file) {
+        try {
+            if (file.isDirectory()) {
+                FileUtils.copyDirectoryToDirectory(file, targetFilePath);
+            } else {
+                FileUtils.copyFileToDirectory(file, targetFilePath, true);
             }
-        });
+        } catch (IOException exc) {
+            log.error("Unsuccessful copying file: {} to path: {}.", file.getAbsolutePath(), targetFilePath.getAbsolutePath(), exc);
+        }
     }
 
 }
