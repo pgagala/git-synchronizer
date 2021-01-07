@@ -12,48 +12,48 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
     public static final String GIT_REMOTE = "http://127.0.0.1:$gitServicePort/test_repository.git"
 
     @Shared
-    File folderUnderRandomPath
+    File testFolder
 
     @Shared
     FileManager fileManager
 
     def setup() {
         def testRepoPath = "test_repo_" + randomAlphabetic(4)
-        folderUnderRandomPath = Files.createTempDirectory(testRepoPath).toFile()
+        testFolder = Files.createTempDirectory(testRepoPath).toFile()
         fileManager = new FileManager(testRepoPath)
     }
 
     def cleanup() {
-        if (folderUnderRandomPath.exists()) {
-            FileUtils.forceDelete(folderUnderRandomPath)
+        if (testFolder.exists()) {
+            FileUtils.forceDelete(testFolder)
         }
     }
 
     def "Git repository should be created and deleted"() {
         given: "Git service for random path"
-            GitService gitService = new GitService(folderUnderRandomPath.getPath(), GIT_REMOTE)
+            GitService gitService = new GitService(testFolder.getPath(), GIT_REMOTE)
 
         when: "Git is initialized"
             gitService.createRepository()
 
         then: "Git repository exists"
-            folderUnderRandomPath.listFiles().any { it.getName() == '.git' }
+            testFolder.listFiles().any { it.getName() == '.git' }
 
         when: "Git repository is removed"
             gitService.deleteRepository()
 
         then: "Git repository doesn't exist"
-            folderUnderRandomPath.listFiles() == null
+            testFolder.listFiles() == null
     }
 
     def "Committed files should be present on connected remote git server"() {
         given: "Initialized git service for a random path"
-            GitService gitService = new GitService(folderUnderRandomPath.getPath(), GIT_REMOTE)
+            GitService gitService = new GitService(testFolder.getPath(), GIT_REMOTE)
             gitService.createRepository()
 
         and: "New file copied in repository"
             def fileName = "/file-" + randomAlphabetic(5)
-            File file = new File(folderUnderRandomPath.getPath() + fileName)
+            File file = new File(testFolder.getPath() + fileName)
             assert !file.exists()
             file.createNewFile()
 
@@ -64,6 +64,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             printf ""
 
         and: "Proper log message should be saved"
+
 
         when: "File is modified"
 

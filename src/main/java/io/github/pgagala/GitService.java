@@ -5,8 +5,10 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -20,7 +22,7 @@ import static java.util.List.of;
  */
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Slf4j
-//TODO run integration tests on windows as well
+//TODO run integration tests on windows os as well
 class GitService {
 
     private static final String DOCKER = "docker";
@@ -53,7 +55,7 @@ class GitService {
 
     private void addRemote() throws IOException, InterruptedException {
         executeProcess(String.format("git adding remote %s", gitServerRemote), new ProcessBuilder().directory(gitRepositoryFile)
-            .command(DOCKER, "remote", "add", "origin", gitServerRemote));
+            .command(getDockerGitCommandForLocalExecution(of("remote", "add", "origin", gitServerRemote))));
     }
 
     private void initRepository() throws IOException, InterruptedException {
@@ -65,7 +67,7 @@ class GitService {
         try {
             FileUtils.forceDelete(gitRepositoryFile);
         } catch (IOException exc) {
-            log.error("Unsuccessful deleting repository under path: {}", gitRepositoryFile.getAbsolutePath(), exc);
+            log.error("Unsuccessful deleting repository under path: {}. Error msg: {}", gitRepositoryFile.getAbsolutePath(), exc.getMessage());
             throw exc;
         }
     }
@@ -82,8 +84,11 @@ class GitService {
             .command(getDockerGitCommandForLocalExecution(of("-c", "user.name='haker bonzo'", "-c", "user.email=hakier@bonzo.pl", "commit", "-m",
                 commitMessage))));
 
+        executeProcess("git log", new ProcessBuilder().directory(gitRepositoryFile)
+            .command(getDockerGitCommandForLocalExecution(of("log"))));
+
         executeProcess("git pushing to origin", new ProcessBuilder().directory(gitRepositoryFile)
-            .command(getDockerGitCommandForLocalExecution(of("push", "origin"))));
+            .command(getDockerGitCommandForLocalExecution(of("push", "-u", "origin", "master"))));
     }
 
     private String[] getDockerGitCommandForLocalExecution(List<String> gitCommand) {
@@ -97,7 +102,16 @@ class GitService {
         executeAndWaitUntilFinished(description, processBuilder.start());
     }
 
-    private void executeAndWaitUntilFinished(String description, Process process) throws InterruptedException {
+    private void executeAndWaitUntilFinished(String description, Process process) throws InterruptedException, IOException {
+        BufferedReader reader =
+                new BufferedReader(new InputStreamReader(process.getInputStream()));
+StringBuilder builder = new StringBuilder();
+String line = null;
+while ( (line = reader.readLine()) != null) {
+   builder.append(line);
+   builder.append(System.getProperty("line.separator"));
+}
+String result = builder.toString();
         int responseCode = process.waitFor();
         if (responseCode != 0) {
             log.error("Unsuccessful {} process execution: {}", description, process);
