@@ -68,7 +68,9 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             response.isSuccessful()
 
         and: "Proper log message should be saved"
-
+            processExecutor.execute(["cat", "${testFolder.getAbsolutePath()}/.git/logs/refs/heads/master".toString()], "cat file")
+                    .result()
+                    .contains("File created: " + file.getAbsolutePath())
 
         when: "File is modified"
 

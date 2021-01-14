@@ -93,6 +93,11 @@ class GitService {
 //            .command(getDockerGitCommandForLocalExecution(of("log"))));
     }
 
+    Response execute(List<String> commands, String description) throws InterruptedException {
+        List<String> dockerCommand = getDockerGitCommandForLocalExecution(commands);
+        return processExecutor.execute(dockerCommand, description);
+    }
+
     private String getCommitMessage(FilesChanges fileChanges) {
         StringBuilder commitMessageBuilder = new StringBuilder();
         fileChanges.forEach(f -> commitMessageBuilder.append(f.getLogMessage()).append("/n"));
