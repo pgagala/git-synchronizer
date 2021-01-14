@@ -31,10 +31,15 @@ class ProcessExecutorSpec extends Specification {
 
     def "If process wasn't executed successfully exception should be raised"() {
         when: "Non existing process is executed"
-            processExecutor.execute("bla")
+            def response = processExecutor.execute(processParameters, description)
 
-        then: "Exception should be thrown"
-            thrown RuntimeException
+        then: "Reponse should be failure"
+            !response.isSuccessful()
+
+        where:
+            processParameters | description
+            ["bla"]           | "non existing"
+            ["ls -b"]         | "wrong argument"
     }
 
     def "Executed process should return proper response"() {
@@ -44,10 +49,11 @@ class ProcessExecutorSpec extends Specification {
             file.createNewFile()
 
         when: "`ls` command is executed"
-            def response = processExecutor.execute("ls")
+            def response = processExecutor.execute(["ls"], "ls commands")
 
         then: "File foo should be listed"
-            response.contains("foo")
+            response.isSuccessful()
+            response.result().contains("foo")
     }
 
 }
