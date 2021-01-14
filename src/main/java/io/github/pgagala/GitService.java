@@ -5,16 +5,15 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.lang.String.format;
 import static java.util.List.of;
 
 /**
@@ -28,93 +27,82 @@ class GitService {
     private static final String DOCKER = "docker";
     private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm", "-v");
     private static final List<String> dockerGitInvocationSuffix = of("-v", System.getenv("HOME") + "/.ssh:/root/.ssh", "alpine/git:user");
+    private static final String NEW_LINE = "/n";
     List<String> dockerGitInvocationCommand;
     File gitRepositoryFile;
     String gitServerRemote;
+    ProcessExecutor processExecutor;
 
     GitService(String gitRepositoryPath, String gitServerRemote) {
         this.gitRepositoryFile = new File(gitRepositoryPath);
         this.gitServerRemote = gitServerRemote;
+        this.processExecutor = new ProcessExecutor(gitRepositoryFile);
         dockerGitInvocationCommand =
             Stream.of(dockerGitInvocationPrefix, of(gitRepositoryPath + ":/git"), dockerGitInvocationSuffix)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    void createRepository() throws IOException, InterruptedException {
+    void createRepository() throws InterruptedException {
         log.info("Creating repository under path: {}. Files will be synchronized in that repository. " +
             "After program shutdown that will be automatically cleaned up", gitRepositoryFile.getAbsolutePath());
-        try {
-            initRepository();
-            addRemote();
-        } catch (Exception exc) {
-            log.error("Exception during creating repository: {}", exc.getMessage());
-            throw exc;
+        Response response = Response.of(initRepository(), addRemote());
+        if (response.isFailure()) {
+            throw new IllegalStateException("Error during creating repository: " + response.result());
         }
     }
 
-    private void addRemote() throws IOException, InterruptedException {
-        executeProcess(String.format("git adding remote %s", gitServerRemote), new ProcessBuilder().directory(gitRepositoryFile)
-            .command(getDockerGitCommandForLocalExecution(of("remote", "add", "origin", gitServerRemote))));
+    private Response initRepository() throws InterruptedException {
+        List<String> initCommand = getDockerGitCommandForLocalExecution(of("init"));
+        return processExecutor.execute(initCommand, "git init");
     }
 
-    private void initRepository() throws IOException, InterruptedException {
-        executeProcess("git init", new ProcessBuilder()
-            .command(getDockerGitCommandForLocalExecution(of("init"))));
+    private Response addRemote() throws InterruptedException {
+        List<String> addingRemoteCommand = getDockerGitCommandForLocalExecution(of("remote", "add", "origin", gitServerRemote));
+        return processExecutor.execute(addingRemoteCommand, format("git adding remote %s", gitServerRemote));
     }
 
-    void deleteRepository() throws IOException {
+    //TODO throw or stay with response ?
+    Response deleteRepository() {
         try {
             FileUtils.forceDelete(gitRepositoryFile);
+            return Response.success();
         } catch (IOException exc) {
-            log.error("Unsuccessful deleting repository under path: {}. Error msg: {}", gitRepositoryFile.getAbsolutePath(), exc.getMessage());
-            throw exc;
+            String errorMsg = String.format("Unsuccessful deleting repository under path: %s. Error msg: %s", gitRepositoryFile.getAbsolutePath(),
+                exc.getMessage());
+            log.error(errorMsg);
+            return Response.failure(errorMsg);
         }
     }
 
-    void commitChanges(FilesChanges fileChanges) throws IOException, InterruptedException {
-        StringBuilder commitMessageBuilder = new StringBuilder();
-        fileChanges.forEach(f -> commitMessageBuilder.append(f.getLogMessage()).append("/n"));
-        String commitMessage = commitMessageBuilder.substring(0, commitMessageBuilder.lastIndexOf("/n"));
+    Response commitChanges(FilesChanges fileChanges) throws InterruptedException {
+        List<String> addCommand = getDockerGitCommandForLocalExecution(of("add", "."));
+        Response addingResp = processExecutor.execute(addCommand, "git adding file");
 
-        executeProcess("git adding file", new ProcessBuilder().directory(gitRepositoryFile)
-            .command(getDockerGitCommandForLocalExecution(of("add", "."))));
+        //TODO credentials to configure
+        List<String> commitCommand = getDockerGitCommandForLocalExecution(of("-c", "user.name='haker bonzo'", "-c", "user.email=hakier@bonzo.pl",
+            "commit", "-m",
+            getCommitMessage(fileChanges)));
+        Response committingResp = processExecutor.execute(commitCommand, "git committing");
 
-        executeProcess("git committing", new ProcessBuilder().directory(gitRepositoryFile)
-            .command(getDockerGitCommandForLocalExecution(of("-c", "user.name='haker bonzo'", "-c", "user.email=hakier@bonzo.pl", "commit", "-m",
-                commitMessage))));
+        List<String> pushingToOriginCommand = getDockerGitCommandForLocalExecution(of("push", "-u", "origin", "master"));
+        Response pushingResp = processExecutor.execute(pushingToOriginCommand, "git pushing to origin");
 
-        executeProcess("git log", new ProcessBuilder().directory(gitRepositoryFile)
-            .command(getDockerGitCommandForLocalExecution(of("log"))));
-
-        executeProcess("git pushing to origin", new ProcessBuilder().directory(gitRepositoryFile)
-            .command(getDockerGitCommandForLocalExecution(of("push", "-u", "origin", "master"))));
+        return Response.of(addingResp, committingResp, pushingResp);
+//        executeProcess("git log", new ProcessBuilder().directory(gitRepositoryFile)
+//            .command(getDockerGitCommandForLocalExecution(of("log"))));
     }
 
-    private String[] getDockerGitCommandForLocalExecution(List<String> gitCommand) {
+    private String getCommitMessage(FilesChanges fileChanges) {
+        StringBuilder commitMessageBuilder = new StringBuilder();
+        fileChanges.forEach(f -> commitMessageBuilder.append(f.getLogMessage()).append("/n"));
+        return commitMessageBuilder.substring(0, commitMessageBuilder.lastIndexOf(NEW_LINE));
+    }
+
+    private List<String> getDockerGitCommandForLocalExecution(List<String> gitCommand) {
         List<String> dockerCommand = new ArrayList<>(dockerGitInvocationCommand);
         dockerCommand.addAll(gitCommand);
 
-        return dockerCommand.toArray(new String[0]);
-    }
-
-    private void executeProcess(String description, ProcessBuilder processBuilder) throws IOException, InterruptedException {
-        executeAndWaitUntilFinished(description, processBuilder.start());
-    }
-
-    private void executeAndWaitUntilFinished(String description, Process process) throws InterruptedException, IOException {
-        BufferedReader reader =
-                new BufferedReader(new InputStreamReader(process.getInputStream()));
-StringBuilder builder = new StringBuilder();
-String line = null;
-while ( (line = reader.readLine()) != null) {
-   builder.append(line);
-   builder.append(System.getProperty("line.separator"));
-}
-String result = builder.toString();
-        int responseCode = process.waitFor();
-        if (responseCode != 0) {
-            log.error("Unsuccessful {} process execution: {}", description, process);
-        }
+        return dockerCommand;
     }
 }

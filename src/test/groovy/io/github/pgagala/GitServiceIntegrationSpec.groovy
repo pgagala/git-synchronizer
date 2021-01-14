@@ -17,10 +17,14 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
     @Shared
     FileManager fileManager
 
+    @Shared
+    ProcessExecutor processExecutor
+
     def setup() {
         def testRepoPath = "test_repo_" + randomAlphabetic(4)
         testFolder = Files.createTempDirectory(testRepoPath).toFile()
         fileManager = new FileManager(testRepoPath)
+        processExecutor = new ProcessExecutor(testFolder)
     }
 
     def cleanup() {
@@ -58,10 +62,10 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             file.createNewFile()
 
         when: "File is committed to repository"
-            gitService.commitChanges(new FilesChanges([new CreationFileChange(file)]))
+            def response = gitService.commitChanges(new FilesChanges([new CreationFileChange(file)]))
 
         then: "File should be successfully committed"
-            printf ""
+            response.isSuccessful()
 
         and: "Proper log message should be saved"
 

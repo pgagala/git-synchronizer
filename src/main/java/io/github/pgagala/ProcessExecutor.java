@@ -1,7 +1,6 @@
 package io.github.pgagala;
 
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +21,10 @@ class ProcessExecutor {
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
     File executionLocation;
 
-    Response execute(List<String> commands, String description) throws IOException, InterruptedException {
-        return executeProcess(description, new ProcessBuilder().directory(executionLocation).command(commands));
+    Response execute(List<String> commands, String description) throws InterruptedException {
+        return executeProcess(description, new ProcessBuilder()
+            .directory(executionLocation)
+            .command(commands));
     }
 
     private Response executeProcess(String description, ProcessBuilder processBuilder) throws InterruptedException {
@@ -32,7 +33,6 @@ class ProcessExecutor {
         } catch (IOException exception) {
             return Response.failure(format("Unsuccessful %s process execution, exception: %s", description, exception));
         }
-
     }
 
     private Response executeAndWaitUntilFinished(String description, Process process) throws InterruptedException, IOException {
@@ -42,7 +42,7 @@ class ProcessExecutor {
             log.error("Unsuccessful {} process execution: {}", description, process);
             return Response.failure(format("Unsuccessful %s process execution: %s", description, process));
         }
-        return Response.of(responseBuilder.toString());
+        return Response.success(responseBuilder.toString());
     }
 
     private StringBuilder getResponseBuilder(Process process) throws IOException {
@@ -56,29 +56,4 @@ class ProcessExecutor {
         }
         return builder;
     }
-
-    @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    static class Response {
-        boolean successful;
-        String result;
-
-        static Response of(String result) {
-            return new Response(true, result);
-        }
-
-        static Response failure(String failureReason) {
-            return new Response(false, failureReason);
-        }
-
-        boolean isSuccessful() {
-            return this.successful;
-        }
-
-        String result() {
-            return this.result;
-        }
-    }
-
-
 }
