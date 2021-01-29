@@ -25,7 +25,7 @@ import static java.util.List.of;
 class GitService {
 
     private static final String DOCKER = "docker";
-    private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm", "-v");
+    private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm", "--network");
     private static final List<String> dockerGitInvocationSuffix = of("-v", System.getenv("HOME") + "/.ssh:/root/.ssh", "alpine/git:user");
     private static final String NEW_LINE = "/n";
     List<String> dockerGitInvocationCommand;
@@ -33,12 +33,12 @@ class GitService {
     String gitServerRemote;
     ProcessExecutor processExecutor;
 
-    GitService(String gitRepositoryPath, String gitServerRemote) {
+    GitService(String gitRepositoryPath, String gitServerRemote, String gitServerNetwork) {
         this.gitRepositoryFile = new File(gitRepositoryPath);
         this.gitServerRemote = gitServerRemote;
         this.processExecutor = new ProcessExecutor(gitRepositoryFile);
         dockerGitInvocationCommand =
-            Stream.of(dockerGitInvocationPrefix, of(gitRepositoryPath + ":/git"), dockerGitInvocationSuffix)
+            Stream.of(dockerGitInvocationPrefix, of(gitServerNetwork, "-v", gitRepositoryPath + ":/git"), dockerGitInvocationSuffix)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toUnmodifiableList());
     }
@@ -85,17 +85,10 @@ class GitService {
             getCommitMessage(fileChanges)));
         Response committingResp = processExecutor.execute(commitCommand, "git committing");
 
-        List<String> pushingToOriginCommand = getDockerGitCommandForLocalExecution(of("push", "-u", "origin", "master"));
+        List<String> pushingToOriginCommand = getDockerGitCommandForLocalExecution(of("push", "origin", "master"));
         Response pushingResp = processExecutor.execute(pushingToOriginCommand, "git pushing to origin");
 
         return Response.of(addingResp, committingResp, pushingResp);
-//        executeProcess("git log", new ProcessBuilder().directory(gitRepositoryFile)
-//            .command(getDockerGitCommandForLocalExecution(of("log"))));
-    }
-
-    Response execute(List<String> commands, String description) throws InterruptedException {
-        List<String> dockerCommand = getDockerGitCommandForLocalExecution(commands);
-        return processExecutor.execute(dockerCommand, description);
     }
 
     private String getCommitMessage(FilesChanges fileChanges) {

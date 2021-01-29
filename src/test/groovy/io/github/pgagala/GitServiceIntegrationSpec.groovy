@@ -9,7 +9,7 @@ import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtil
 
 class GitServiceIntegrationSpec extends IntegrationSpec {
 
-    public static final String GIT_REMOTE = "http://127.0.0.1:$gitServicePort/test_repository.git"
+    public static final String GIT_REMOTE = "http://$gitServerIp/test_repository.git"
 
     @Shared
     File testFolder
@@ -35,7 +35,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
 
     def "Git repository should be created and deleted"() {
         given: "Git service for random path"
-            GitService gitService = new GitService(testFolder.getPath(), GIT_REMOTE)
+            GitService gitService = new GitService(testFolder.getPath(), GIT_REMOTE, gitServerNetwork)
 
         when: "Git is initialized"
             gitService.createRepository()
@@ -52,7 +52,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
 
     def "Committed files should be present on connected remote git server"() {
         given: "Initialized git service for a random path"
-            GitService gitService = new GitService(testFolder.getPath(), GIT_REMOTE)
+            GitService gitService = new GitService(testFolder.getPath(), GIT_REMOTE, gitServerNetwork)
             gitService.createRepository()
 
         and: "New file copied in repository"

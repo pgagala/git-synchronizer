@@ -1,13 +1,13 @@
 version: "3.7"
 services:
-  git:
-    image: alpine/git:latest
-    restart: always
   git-server:
     build:
       dockerfile: gitserver.Dockerfile
       context: .
     image: git-server
     restart: always
-#    volumes:
-#      - ./repos:/var/www/git
+    networks:
+      - my-net
+networks:
+  my-net:
+    driver: bridge
