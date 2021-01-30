@@ -73,16 +73,24 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
                     .contains("File created: " + file.getAbsolutePath())
 
         when: "File is modified"
+            file.append("file modification")
 
         and: "File is committed to repository"
+            response = gitService.commitChanges(new FilesChanges([new ModificationFileChange(file)]))
 
         then: "File should be successfully committed"
+            response.isSuccessful()
 
         and: "Proper log message should be saved"
+            processExecutor.execute(["cat", "${testFolder.getAbsolutePath()}/.git/logs/refs/heads/master".toString()], "cat file")
+                    .result()
+                    .contains("File changed: " + file.getAbsolutePath())
 
         when: "File is deleted"
+//            file.delete()
 
         and: "File is committed to repository"
+
 
         then: "File should be successfully committed"
 
