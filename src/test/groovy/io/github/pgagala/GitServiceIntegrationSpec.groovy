@@ -68,9 +68,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             response.isSuccessful()
 
         and: "Proper log message should be saved"
-            processExecutor.execute(["cat", "${testFolder.getAbsolutePath()}/.git/logs/refs/heads/master".toString()], "cat file")
-                    .result()
-                    .contains("File created: " + file.getAbsolutePath())
+            assertGitLogContains(file, "created")
 
         when: "File is modified"
             file.append("file modification")
@@ -82,20 +80,25 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             response.isSuccessful()
 
         and: "Proper log message should be saved"
-            processExecutor.execute(["cat", "${testFolder.getAbsolutePath()}/.git/logs/refs/heads/master".toString()], "cat file")
-                    .result()
-                    .contains("File changed: " + file.getAbsolutePath())
+            assertGitLogContains(file, "changed")
 
         when: "File is deleted"
-//            file.delete()
+            file.delete()
 
         and: "File is committed to repository"
-
+            response = gitService.commitChanges(new FilesChanges([new DeletionFileChange(file)]))
 
         then: "File should be successfully committed"
+            response.isSuccessful()
 
         and: "Proper log message should be saved"
+        assertGitLogContains(file, "deleted")
+    }
 
+    private boolean assertGitLogContains(File file, String logEvent) {
+        processExecutor.execute(["cat", "${testFolder.getAbsolutePath()}/.git/logs/refs/heads/master".toString()], "cat file")
+                .result()
+                .contains("File $logEvent: ${file.getAbsolutePath()}")
     }
 
 }
