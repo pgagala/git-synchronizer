@@ -7,6 +7,7 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -25,7 +26,8 @@ import static java.util.List.of;
 class GitService {
 
     private static final String DOCKER = "docker";
-    private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm", "--network");
+    private static final List<String> dockerGitInvocationPrefixWithNetwork = of(DOCKER, "run", "--rm", "--network");
+    private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm");
     private static final List<String> dockerGitInvocationSuffix = of("-v", System.getenv("HOME") + "/.ssh:/root/.ssh", "alpine/git:user");
     private static final String NEW_LINE = "/n";
     List<String> dockerGitInvocationCommand;
@@ -33,22 +35,43 @@ class GitService {
     String gitServerRemote;
     ProcessExecutor processExecutor;
 
+    GitService(String gitRepositoryPath, String gitServerRemote) {
+        this.gitRepositoryFile = new File(gitRepositoryPath);
+        this.gitServerRemote = gitServerRemote;
+        this.processExecutor = new ProcessExecutor(gitRepositoryFile);
+        dockerGitInvocationCommand =
+            Stream.of(dockerGitInvocationPrefix, of("-v", gitRepositoryPath + ":/git"), dockerGitInvocationSuffix)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    GitService(String gitServerRemote) throws IOException {
+        this(Files.createTempDirectory("git-synchronizer-temp-repository").toFile().getAbsolutePath(), gitServerRemote);
+    }
+
     GitService(String gitRepositoryPath, String gitServerRemote, String gitServerNetwork) {
         this.gitRepositoryFile = new File(gitRepositoryPath);
         this.gitServerRemote = gitServerRemote;
         this.processExecutor = new ProcessExecutor(gitRepositoryFile);
         dockerGitInvocationCommand =
-            Stream.of(dockerGitInvocationPrefix, of(gitServerNetwork, "-v", gitRepositoryPath + ":/git"), dockerGitInvocationSuffix)
+            Stream.of(dockerGitInvocationPrefixWithNetwork, of(gitServerNetwork, "-v", gitRepositoryPath + ":/git"), dockerGitInvocationSuffix)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    void createRepository() throws InterruptedException {
+    void createRepository() throws InterruptedException, IOException {
+        createRepositoryFolderIfDoesNotExist();
         log.info("Creating repository under path: {}. Files will be synchronized in that repository. " +
             "After program shutdown that will be automatically cleaned up", gitRepositoryFile.getAbsolutePath());
         Response response = Response.of(initRepository(), addRemote());
         if (response.isFailure()) {
             throw new IllegalStateException("Error during creating repository: " + response.result());
+        }
+    }
+
+    private void createRepositoryFolderIfDoesNotExist() throws IOException {
+        if(!gitRepositoryFile.exists()) {
+            Files.createDirectory(gitRepositoryFile.toPath());
         }
     }
 

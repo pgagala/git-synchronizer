@@ -17,6 +17,7 @@ class FileManager {
 
     File targetFilePath;
 
+    //TODO pass file ?
     FileManager(String targetPath) throws IOException {
         this.targetFilePath = new File(targetPath);
         forceDeleteOnExit(targetFilePath);

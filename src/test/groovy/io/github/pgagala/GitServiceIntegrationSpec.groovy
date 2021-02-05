@@ -21,9 +21,9 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
     ProcessExecutor processExecutor
 
     def setup() {
-        def testRepoPath = "test_repo_" + randomAlphabetic(4)
-        testFolder = Files.createTempDirectory(testRepoPath).toFile()
-        fileManager = new FileManager(testRepoPath)
+        def testRepoFolderName = "test_repo_" + randomAlphabetic(4)
+        testFolder = Files.createTempDirectory(testRepoFolderName).toFile()
+        fileManager = new FileManager(testRepoFolderName)
         processExecutor = new ProcessExecutor(testFolder)
     }
 

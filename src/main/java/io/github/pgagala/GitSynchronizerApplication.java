@@ -5,6 +5,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Paths;
 import java.util.List;
 
+//TODO - add gui javafx (https://openjfx.io/)
 class GitSynchronizerApplication {
     // paths to listening on defined via args to main, commit interval as well. SSH should be earlier set up.ą
     // recognize if something is file or folder path.toFile().isFile()
