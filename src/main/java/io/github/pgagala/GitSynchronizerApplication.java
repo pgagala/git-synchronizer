@@ -7,7 +7,7 @@ import java.util.List;
 
 //TODO - add gui javafx (https://openjfx.io/)
 class GitSynchronizerApplication {
-    // paths to listening on defined via args to main, commit interval as well. SSH should be earlier set up.ą
+    // paths to listening on defined via args to main, commit interval as well. SSH should be earlier set up.
     // recognize if something is file or folder path.toFile().isFile()
     // watching on windows available only on folder lvl - check linux
     // 2 threads - one gathering and flatting changes to queue(getting rid of 2 events after modifying one file - one modified timestamp, seconds

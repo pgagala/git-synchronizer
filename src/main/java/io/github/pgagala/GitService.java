@@ -98,7 +98,7 @@ class GitService {
         }
     }
 
-    Response commitChanges(FilesChanges fileChanges) throws InterruptedException {
+    Response commitChanges(FileChanges fileChanges) throws InterruptedException {
         List<String> addCommand = getDockerGitCommandForLocalExecution(of("add", "."));
         Response addingResp = processExecutor.execute(addCommand, "git adding file");
 
@@ -114,7 +114,7 @@ class GitService {
         return Response.of(addingResp, committingResp, pushingResp);
     }
 
-    private String getCommitMessage(FilesChanges fileChanges) {
+    private String getCommitMessage(FileChanges fileChanges) {
         StringBuilder commitMessageBuilder = new StringBuilder();
         fileChanges.forEach(f -> commitMessageBuilder.append(f.getLogMessage()).append("/n"));
         return commitMessageBuilder.substring(0, commitMessageBuilder.lastIndexOf(NEW_LINE));

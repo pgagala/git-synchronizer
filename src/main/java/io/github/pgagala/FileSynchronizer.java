@@ -1,10 +1,9 @@
 package io.github.pgagala;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import lombok.val;
 
 import java.io.IOException;
-import java.nio.file.WatchEvent;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -21,9 +20,9 @@ class FileSynchronizer {
     void run() throws IOException, InterruptedException {
         executorService.submit(() -> {
             while (true) {
-                List<WatchEvent<?>> watchEvents = fileWatcher.occurredEvents();
-                for (WatchEvent<?> event : watchEvents) {
-                    System.out.println("Event kind : " + event.kind() + " - File : " + event.context());
+                FileChanges fileChanges = fileWatcher.occurredFileChanges();
+                for (val fileChange : fileChanges) {
+                    System.out.println("File change: " + fileChange.toString());
                 }
                 try {
                     Thread.sleep(1000);

@@ -62,7 +62,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             file.createNewFile()
 
         when: "File is committed to repository"
-            def response = gitService.commitChanges(new FilesChanges([new CreationFileChange(file)]))
+            def response = gitService.commitChanges(new FileChanges([new FileCreated(file)]))
 
         then: "File should be successfully committed"
             response.isSuccessful()
@@ -74,7 +74,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             file.append("file modification")
 
         and: "File is committed to repository"
-            response = gitService.commitChanges(new FilesChanges([new ModificationFileChange(file)]))
+            response = gitService.commitChanges(new FileChanges([new FileModified(file)]))
 
         then: "File should be successfully committed"
             response.isSuccessful()
@@ -86,7 +86,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             file.delete()
 
         and: "File is committed to repository"
-            response = gitService.commitChanges(new FilesChanges([new DeletionFileChange(file)]))
+            response = gitService.commitChanges(new FileChanges([new FileDeleted(file)]))
 
         then: "File should be successfully committed"
             response.isSuccessful()

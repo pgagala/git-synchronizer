@@ -1,6 +1,10 @@
 package io.github.pgagala;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.val;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -10,28 +14,37 @@ import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
+@RequiredArgsConstructor
+@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 class FileWatcher {
-    //TODO integration to test changes from differents places
+    //TODO integration to test changes from different places
     //TODO cannot add files with same name from different paths
-    private final LinkedBlockingQueue<WatchEvent<?>> linkedBlockingQueue = new LinkedBlockingQueue<>();
-    private final ExecutorService executorService;
-    private final WatchService watchService;
+    Map<String, Function<WatchEvent<?>, FileChange>> eventNameToFileChangeCreatorMapping = Map.of(
+        ENTRY_CREATE.name(), FileCreated::of,
+        ENTRY_MODIFY.name(), FileModified::of,
+        ENTRY_DELETE.name(), FileDeleted::of);
+    LinkedBlockingQueue<WatchEvent<?>> linkedBlockingQueue = new LinkedBlockingQueue<>();
+    ExecutorService executorService;
+    WatchService watchService;
 
     public FileWatcher(WatchService watchService, List<Path> paths) throws IOException {
         this.watchService = watchService;
         executorService = Executors.newFixedThreadPool(paths.size(), new ThreadFactoryBuilder().setNameFormat("file-watcher-thread-%d").build());
-        registerWatcherService(Collections.unmodifiableList(paths));
+        subscribePathsToWatcherService(Collections.unmodifiableList(paths));
     }
 
-    private void registerWatcherService(List<Path> paths) throws IOException {
+    private void subscribePathsToWatcherService(List<Path> paths) throws IOException {
         for (Path path : paths) {
             path.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
         }
@@ -58,10 +71,32 @@ class FileWatcher {
         });
     }
 
-    List<WatchEvent<?>> occurredEvents() {
+    //TODO replace WatchEvent with fileChanges ?
+    //then finish test FileWatcherSpec
+    //then test on windows
+    //then acceptance integration spec
+    //testing ?
+    //optionally javafx
+    FileChanges occurredFileChanges() {
         List<WatchEvent<?>> events = new ArrayList<>();
         linkedBlockingQueue.drainTo(events);
-        return removeDuplicatedEvents(events);
+        return toFileChanges(removeDuplicatedEvents(events));
+    }
+
+    private FileChanges toFileChanges(List<WatchEvent<?>> events) {
+        val fileChangesList = events
+            .stream()
+            .peek(event -> {
+                    String eventName = event.kind().name();
+                    if (!eventNameToFileChangeCreatorMapping.containsKey(eventName)) {
+                        throw new IllegalArgumentException("Unsupported event name: " + eventName);
+                    }
+                }
+            )
+            .map(event -> eventNameToFileChangeCreatorMapping.get(event.kind().name()).apply(event))
+            .collect(Collectors.toUnmodifiableList());
+
+        return new FileChanges(fileChangesList);
     }
 
     private List<WatchEvent<?>> removeDuplicatedEvents(List<WatchEvent<?>> watchEvents) {
