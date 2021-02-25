@@ -11,10 +11,9 @@ class FileSynchronizerSpec extends Specification implements FileWatcherSampleDat
     FileSynchronizer fileSynchronizer
 
     def "new files should be added to git repo"() {
-        given: "file watcher with recorded new files"
-            def fileChanges = fileChanges([fileCreated(new File("file1")), fileCreated(new File("file2"))])
+        given: "file watcher with recorded files changes"
             FileWatcher fileWatcher = Mock(FileWatcher) {
-                occurredFileChanges() >>> [fileChanges, new FileChanges([])]
+                occurredFileChanges() >>> [filesChanges, new FileChanges([])]
             }
         and: "file synchronizer with mocked git service"
             GitService gitService = Mockito.mock(GitService)
@@ -24,19 +23,14 @@ class FileSynchronizerSpec extends Specification implements FileWatcherSampleDat
             fileSynchronizer.run()
         then: "new files should be committed to git repository"
             new PollingConditions(timeout: 2).eventually {
-                toSpockVerification(Mockito.verify(gitService).commitChanges(fileChanges))
+                toSpockVerification(Mockito.verify(gitService).commitChanges(filesChanges))
             }
 
+        where:
+            filesChanges << [
+                    fileChanges([fileCreated(new File("file1")), fileCreated(new File("file2"))]),
+                    fileChanges([fileDeleted(new File("file1"))]),
+                    fileChanges([fileCreated(new File("file3")), fileModified(new File("file2"))])
+            ]
     }
-
-    def "discarded files should be removed git repo"() {
-        expect:
-            1 == 1
-    }
-
-    def "changed files should be updated in git repo"() {
-        expect:
-            1 == 1
-    }
-
 }

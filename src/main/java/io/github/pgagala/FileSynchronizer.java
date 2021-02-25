@@ -26,10 +26,10 @@ class FileSynchronizer {
                 if(fileChanges.isEmpty()) {
                     continue;
                 }
-                gitService.commitChanges(fileChanges);
                 for (val fileChange : fileChanges) {
                     System.out.println("File change: " + fileChange.toString());
                 }
+                gitService.commitChanges(fileChanges);
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
