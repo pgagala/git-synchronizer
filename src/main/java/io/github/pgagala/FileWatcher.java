@@ -71,8 +71,8 @@ class FileWatcher {
         });
     }
 
-    //TODO replace WatchEvent with fileChanges ?
-    //then finish test FileWatcherSpec
+    //TODO
+    //
     //then test on windows
     //then acceptance integration spec
     //testing ?

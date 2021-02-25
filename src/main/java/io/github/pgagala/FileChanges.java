@@ -21,7 +21,7 @@ class FileChanges implements Iterable<FileChange> {
 
     private final List<FileChange> fileChanges;
 
-    public FileChanges(List<FileChange> fileChanges) {
+    FileChanges(List<FileChange> fileChanges) {
         this.fileChanges = Collections.unmodifiableList(fileChanges);
     }
 
@@ -42,6 +42,10 @@ class FileChanges implements Iterable<FileChange> {
         newFileChanges.addAll(fileChangesToAdd.fileChanges);
 
         return new FileChanges(newFileChanges);
+    }
+
+    boolean isEmpty() {
+        return this.fileChanges.isEmpty();
     }
 }
 

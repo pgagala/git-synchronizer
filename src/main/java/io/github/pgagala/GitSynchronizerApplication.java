@@ -23,8 +23,10 @@ class GitSynchronizerApplication {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), List.of(Paths.get("c:\\Trash")));
+        //TODO add git server remote
         fileWatcher.run();
-        new FileSynchronizer(fileWatcher).run();
+        GitService gitService = new GitService("");
+        new FileSynchronizer(fileWatcher, gitService).run();
         System.out.println("App started");
 
     }
