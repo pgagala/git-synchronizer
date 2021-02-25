@@ -1,7 +1,6 @@
 package io.github.pgagala
 
 import org.apache.commons.io.FileUtils
-import spock.lang.Shared
 
 import java.nio.file.Files
 
@@ -11,13 +10,8 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
 
     public static final String GIT_REMOTE = "http://$gitServerIp/test_repository.git"
 
-    @Shared
     File testFolder
-
-    @Shared
     FileManager fileManager
-
-    @Shared
     ProcessExecutor processExecutor
 
     def setup() {

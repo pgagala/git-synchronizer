@@ -1,7 +1,6 @@
 package io.github.pgagala
 
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils
-import spock.lang.Shared
 import spock.lang.Specification
 
 import java.nio.file.Files
@@ -11,7 +10,6 @@ import static org.apache.commons.io.FileUtils.forceDelete
 
 class FileManagerSpec extends Specification {
 
-    @Shared
     FileManager fileManager
     String fileManagerTargetPath
 

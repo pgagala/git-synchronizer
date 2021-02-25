@@ -1,20 +1,15 @@
 package io.github.pgagala
 
 import org.apache.commons.io.FileUtils
-import spock.lang.Shared
 import spock.lang.Specification
 
 import java.nio.file.Files
 
 import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic
 
-
 class ProcessExecutorSpec extends Specification {
 
-    @Shared
     ProcessExecutor processExecutor
-
-    @Shared
     File testFolder
 
     def setup() {

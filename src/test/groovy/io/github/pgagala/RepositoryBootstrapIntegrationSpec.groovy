@@ -1,22 +1,14 @@
 package io.github.pgagala
 
 import org.apache.commons.io.FileUtils
-import spock.lang.Shared
 
 import java.nio.file.Files
 
 class RepositoryBootstrapIntegrationSpec extends IntegrationSpec {
 
-    @Shared
-    private File gitRepo
-
-    @Shared
-    private File gitFolderPath
-
-    @Shared
-    private File createdByItSpecFile
-
-    @Shared
+    File gitRepo
+    File gitFolderPath
+    File createdByItSpecFile
     RepositoryBootstrap repositoryBootstrap
 
     def setup() {
