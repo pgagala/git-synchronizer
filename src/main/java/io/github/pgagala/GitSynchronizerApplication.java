@@ -1,9 +1,16 @@
 package io.github.pgagala;
 
+import com.beust.jcommander.IStringConverter;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 //TODO - add gui javafx (https://openjfx.io/)
 class GitSynchronizerApplication {
@@ -22,12 +29,62 @@ class GitSynchronizerApplication {
     // only after updating watched file)
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), List.of(Paths.get("c:\\Trash")));
-        //TODO add git server remote
+        GitSynchronizerApplicationArgsParser appArgs = new GitSynchronizerApplicationArgsParser(args);
+
+        FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), appArgs.paths());
         fileWatcher.run();
-        GitService gitService = new GitService("");
+
+        GitService gitService = new GitService(appArgs.gitServerRemote());
         new FileSynchronizer(fileWatcher, gitService).run();
+
         System.out.println("App started");
 
+    }
+
+    private static class GitSynchronizerApplicationArgsParser {
+
+        private final ApplicationArgs applicationArgs = new ApplicationArgs();
+
+        GitSynchronizerApplicationArgsParser(String[] args) {
+            JCommander cmd = JCommander.newBuilder()
+                .addObject(applicationArgs)
+                .build();
+            cmd.parse(args);
+        }
+
+        String gitServerRemote() {
+            return applicationArgs.gitServerRemote;
+        }
+
+        List<Path> paths() {
+            List.of(Set.of(applicationArgs.paths))
+            return Collections.unmodifiableList(applicationArgs.paths);
+        }
+
+        private class ApplicationArgs {
+            @Parameter(
+                names = {"--gitServerRemote", "-g"},
+                required = true,
+                description = "Git server remote when backup of file changes should be stored"
+            )
+            private String gitServerRemote;
+
+            @Parameter(
+                names = {"--paths", "-p"},
+                converter = PathConverter.class,
+                required = true,
+                arity = 1,
+                description = "Paths with files which should be monitored"
+            )
+            private List<Path> paths;
+        }
+    }
+
+    private class PathConverter implements IStringConverter<Path> {
+
+        @Override
+        public Path convert(String path) {
+            return Paths.get(path);
+        }
     }
 }
