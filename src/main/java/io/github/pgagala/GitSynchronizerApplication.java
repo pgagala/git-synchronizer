@@ -1,8 +1,11 @@
 package io.github.pgagala;
 
+import com.beust.jcommander.IParameterValidator;
 import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
+import lombok.NonNull;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -10,10 +13,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 //TODO - add gui javafx (https://openjfx.io/)
-class GitSynchronizerApplication {
+public class GitSynchronizerApplication {
     // paths to listening on defined via args to main, commit interval as well. SSH should be earlier set up.
     // recognize if something is file or folder path.toFile().isFile()
     // watching on windows available only on folder lvl - check linux
@@ -34,7 +37,7 @@ class GitSynchronizerApplication {
         FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), appArgs.paths());
         fileWatcher.run();
 
-        GitService gitService = new GitService(appArgs.gitServerRemote());
+        GitService gitService = new GitService(appArgs.serverRemote());
         new FileSynchronizer(fileWatcher, gitService).run();
 
         System.out.println("App started");
@@ -45,19 +48,21 @@ class GitSynchronizerApplication {
 
         private final ApplicationArgs applicationArgs = new ApplicationArgs();
 
-        GitSynchronizerApplicationArgsParser(String[] args) {
-            JCommander cmd = JCommander.newBuilder()
+        GitSynchronizerApplicationArgsParser(@NonNull String[] args) {
+            JCommander cmd = JCommander.newBuilder( )
                 .addObject(applicationArgs)
                 .build();
             cmd.parse(args);
         }
 
-        String gitServerRemote() {
+        String serverRemote() {
             return applicationArgs.gitServerRemote;
         }
 
         List<Path> paths() {
-            List.of(Set.of(applicationArgs.paths))
+            applicationArgs.paths = applicationArgs.paths.stream()
+                .distinct()
+                .collect(Collectors.toUnmodifiableList());
             return Collections.unmodifiableList(applicationArgs.paths);
         }
 
@@ -65,26 +70,53 @@ class GitSynchronizerApplication {
             @Parameter(
                 names = {"--gitServerRemote", "-g"},
                 required = true,
-                description = "Git server remote when backup of file changes should be stored"
+                arity = 1,
+                description = "Git server remote when backup of file changes should be stored (e.g. --gitServerRemote git@github" +
+                    ".com:pgagala/git-synchronizer.git)",
+                validateWith = GitServerRemoteValidator.class
             )
             private String gitServerRemote;
 
             @Parameter(
                 names = {"--paths", "-p"},
                 converter = PathConverter.class,
-                required = true,
-                arity = 1,
-                description = "Paths with files which should be monitored"
+                validateWith = PathValidator.class,
+                required= true,
+                description = "Paths with files which should be monitored (e.g. --paths /c/myDirToMonitor /c/mySecondDirToMonitor"
             )
             private List<Path> paths;
         }
     }
 
-    private class PathConverter implements IStringConverter<Path> {
+    private static class PathConverter implements IStringConverter<Path> {
 
         @Override
         public Path convert(String path) {
             return Paths.get(path);
+        }
+    }
+
+    public static class PathValidator implements IParameterValidator {
+
+        private static final String PATH = "^(\\/[^\\/ ]*)+\\/?$";
+
+        @Override
+        public void validate(String name, String value) {
+            if (!value.matches(PATH)) {
+                throw new ParameterException("Passed path doesn't follow pattern: " + PATH);
+            }
+        }
+    }
+
+    public static class GitServerRemoteValidator implements IParameterValidator {
+
+        private static final String GIT_SERVER_REMOTE = "^git@[^,:]+\\.[^,]+:[^,.]+\\.git$";
+
+        @Override
+        public void validate(String name, String value) {
+            if (!value.matches(GIT_SERVER_REMOTE)) {
+                throw new ParameterException("Passed git server remote doesn't follow pattern: " + GIT_SERVER_REMOTE);
+            }
         }
     }
 }

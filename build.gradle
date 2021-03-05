@@ -44,3 +44,7 @@ task unitTest(type: Test) {
 task cleanAndTest(dependsOn: ['clean', 'test'])
 
 task cleanAndUnitTest(dependsOn: ['clean', 'unitTest'])
+
+lombok {
+    config['lombok.nonNull.exceptionType'] = 'IllegalArgumentException'
+}
