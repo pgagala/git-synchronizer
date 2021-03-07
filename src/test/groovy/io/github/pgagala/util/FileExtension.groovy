@@ -1,4 +1,4 @@
-package io.github.pgagala
+package io.github.pgagala.util
 
 class FileExtension {
     static def shallowEquals(File self, File file2) {

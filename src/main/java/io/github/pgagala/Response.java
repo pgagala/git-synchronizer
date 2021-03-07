@@ -8,11 +8,11 @@ import java.util.Arrays;
 
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-class Response {
+public class Response {
     boolean successful;
     String result;
 
-    static Response of(Response... responses) {
+    public static Response of(Response... responses) {
         return Arrays.stream(responses)
             .filter(Response::isFailure)
             .findAny()
@@ -20,27 +20,27 @@ class Response {
             .orElse(Response.success());
     }
 
-    static Response success() {
+    public static Response success() {
         return new Response(true, "");
     }
 
-    static Response success(String result) {
+    public static Response success(String result) {
         return new Response(true, result);
     }
 
-    static Response failure(String failureReason) {
+    public static Response failure(String failureReason) {
         return new Response(false, failureReason);
     }
 
-    boolean isSuccessful() {
+    public boolean isSuccessful() {
         return this.successful;
     }
 
-    boolean isFailure() {
+    public boolean isFailure() {
         return !this.isSuccessful();
     }
 
-    String result() {
+    public String result() {
         return this.result;
     }
 }

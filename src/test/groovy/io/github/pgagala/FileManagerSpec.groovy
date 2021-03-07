@@ -1,5 +1,6 @@
 package io.github.pgagala
 
+import io.github.pgagala.util.FileManager
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils
 import spock.lang.Specification
 

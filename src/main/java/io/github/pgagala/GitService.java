@@ -70,7 +70,7 @@ class GitService {
     }
 
     private void createRepositoryFolderIfDoesNotExist() throws IOException {
-        if(!gitRepositoryFile.exists()) {
+        if (!gitRepositoryFile.exists()) {
             Files.createDirectory(gitRepositoryFile.toPath());
         }
     }
@@ -108,7 +108,10 @@ class GitService {
             getCommitMessage(fileChanges)));
         Response committingResp = processExecutor.execute(commitCommand, "git committing");
 
-        List<String> pushingToOriginCommand = getDockerGitCommandForLocalExecution(of("push", "origin", "master"));
+        String branch = processExecutor.execute(of("git", "branch", "--show-current"), "git branch")
+            .result()
+            .split("\n")[0];
+        List<String> pushingToOriginCommand = getDockerGitCommandForLocalExecution(of("push", "origin", branch));
         Response pushingResp = processExecutor.execute(pushingToOriginCommand, "git pushing to origin");
 
         return Response.of(addingResp, committingResp, pushingResp);

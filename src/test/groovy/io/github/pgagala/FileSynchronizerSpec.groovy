@@ -4,7 +4,7 @@ import org.mockito.Mockito
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static SpockMockitoVerifier.toSpockVerification
+import static io.github.pgagala.util.SpockMockitoVerifier.toSpockVerification
 
 class FileSynchronizerSpec extends Specification implements FileWatcherSampleData {
 

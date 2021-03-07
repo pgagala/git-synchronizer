@@ -38,10 +38,14 @@ public class GitSynchronizerApplication {
         fileWatcher.run();
 
         GitService gitService = new GitService(appArgs.serverRemote());
+        RepositoryBootstrap repositoryBootstrap = new RepositoryBootstrap(gitService);
+        repositoryBootstrap.initialize();
         new FileSynchronizer(fileWatcher, gitService).run();
 
         System.out.println("App started");
 
+        //TODO do on shutdown
+//        repositoryBootstrap.cleanup();
     }
 
     private static class GitSynchronizerApplicationArgsParser {
