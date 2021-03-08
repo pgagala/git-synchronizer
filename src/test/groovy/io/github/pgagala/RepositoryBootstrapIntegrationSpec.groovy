@@ -15,7 +15,9 @@ class RepositoryBootstrapIntegrationSpec extends IntegrationSpec {
         gitRepo = Files.createTempDirectory("test-repo").toFile()
         gitFolderPath = new File(gitRepo.getAbsolutePath() + "/.git")
         createdByItSpecFile = new File(gitFolderPath.getAbsolutePath() + "/created-by-integration-spec")
-        repositoryBootstrap = new RepositoryBootstrap(new GitService(gitRepo.getAbsolutePath(), ""))
+        repositoryBootstrap = new RepositoryBootstrap(
+                new GitService(new GitServerRemote(""), new GitRepositoryLocal(gitRepo), GitService.DEFAULT_BRANCH)
+        )
     }
 
     def cleanup() {

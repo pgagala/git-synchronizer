@@ -9,7 +9,7 @@ import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtil
 
 class GitServiceIntegrationSpec extends IntegrationSpec {
 
-    public static final String GIT_REMOTE = "http://$gitServerIp/test_repository.git"
+    public static final GitServerRemote GIT_REMOTE = new GitServerRemote("http://$gitServerIp/test_repository.git")
 
     File testFolder
     FileManager fileManager
@@ -30,7 +30,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
 
     def "Git repository should be created and deleted"() {
         given: "Git service for random path"
-            GitService gitService = new GitService(testFolder.getPath(), GIT_REMOTE, gitServerNetwork)
+            GitService gitService = new GitService(GIT_REMOTE, new GitRepositoryLocal(testFolder), GitService.DEFAULT_BRANCH, gitServerNetwork)
 
         when: "Git is initialized"
             gitService.createRepository()
@@ -46,8 +46,9 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
     }
 
     def "Committed files should be present on connected remote git server"() {
-        given: "Initialized git service for a random path"
-            GitService gitService = new GitService(testFolder.getPath(), GIT_REMOTE, gitServerNetwork)
+        given: "Initialized git service for a random path and branch"
+            def newBranch = new GitBranch("branch_${randomAlphabetic(4)}")
+            GitService gitService = new GitService(GIT_REMOTE, new GitRepositoryLocal(testFolder), newBranch, gitServerNetwork)
             gitService.createRepository()
 
         and: "New file copied in repository"
@@ -63,7 +64,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             response.isSuccessful()
 
         and: "Proper log message should be saved"
-            assertGitLogContains(file, "created")
+            assertGitLogContains(file, "created", newBranch)
 
         when: "File is modified"
             file.append("file modification")
@@ -75,7 +76,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             response.isSuccessful()
 
         and: "Proper log message should be saved"
-            assertGitLogContains(file, "changed")
+            assertGitLogContains(file, "changed", newBranch)
 
         when: "File is deleted"
             file.delete()
@@ -87,11 +88,11 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             response.isSuccessful()
 
         and: "Proper log message should be saved"
-        assertGitLogContains(file, "deleted")
+            assertGitLogContains(file, "deleted", newBranch)
     }
 
-    private boolean assertGitLogContains(File file, String logEvent) {
-        processExecutor.execute(["cat", "${testFolder.getAbsolutePath()}/.git/logs/refs/heads/master".toString()], "cat file")
+    private boolean assertGitLogContains(File file, String logEvent, GitBranch branch = GitService.DEFAULT_BRANCH) {
+        processExecutor.execute(["cat", "${testFolder.getAbsolutePath()}/.git/logs/refs/heads/$branch.value".toString()], "cat file")
                 .result()
                 .contains("File $logEvent: ${file.getAbsolutePath()}")
     }

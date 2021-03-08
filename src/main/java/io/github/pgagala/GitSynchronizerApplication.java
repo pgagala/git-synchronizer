@@ -7,8 +7,10 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import lombok.NonNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -37,7 +39,7 @@ public class GitSynchronizerApplication {
         FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), appArgs.paths());
         fileWatcher.run();
 
-        GitService gitService = new GitService(appArgs.serverRemote());
+        GitService gitService = new GitService(appArgs.serverRemote(), appArgs.repositoryPath(), appArgs.gitBranch());
         RepositoryBootstrap repositoryBootstrap = new RepositoryBootstrap(gitService);
         repositoryBootstrap.initialize();
         new FileSynchronizer(fileWatcher, gitService).run();
@@ -53,14 +55,24 @@ public class GitSynchronizerApplication {
         private final ApplicationArgs applicationArgs = new ApplicationArgs();
 
         GitSynchronizerApplicationArgsParser(@NonNull String[] args) {
-            JCommander cmd = JCommander.newBuilder( )
+            JCommander cmd = JCommander.newBuilder()
                 .addObject(applicationArgs)
                 .build();
             cmd.parse(args);
         }
 
-        String serverRemote() {
-            return applicationArgs.gitServerRemote;
+        GitServerRemote serverRemote() {
+            return new GitServerRemote(applicationArgs.gitServerRemote);
+        }
+
+        GitRepositoryLocal repositoryPath() throws IOException {
+            return applicationArgs.gitRepositoryPath != null ?
+                new GitRepositoryLocal(new File(applicationArgs.gitRepositoryPath)) :
+                new GitRepositoryLocal(Files.createTempDirectory("git-synchronizer-temp-repository").toFile());
+        }
+
+        GitBranch gitBranch() {
+            return applicationArgs.gitBranch != null ? new GitBranch(applicationArgs.gitBranch) : GitService.DEFAULT_BRANCH;
         }
 
         List<Path> paths() {
@@ -75,17 +87,33 @@ public class GitSynchronizerApplication {
                 names = {"--gitServerRemote", "-g"},
                 required = true,
                 arity = 1,
-                description = "Git server remote when backup of file changes should be stored (e.g. --gitServerRemote git@github" +
+                description = "Git server remote where backup of file changes should be stored (e.g. --gitServerRemote git@github" +
                     ".com:pgagala/git-synchronizer.git)",
                 validateWith = GitServerRemoteValidator.class
             )
             private String gitServerRemote;
 
             @Parameter(
+                names = {"--repositoryPath", "-r"},
+                arity = 1,
+                description = "Repository path under which backup of file changes should be stored (e.g. --repositoryPath /tmp/mySynchronizedRepo)." +
+                    " Default is somewhere in tmp folder",
+                validateWith = PathValidator.class
+            )
+            private String gitRepositoryPath;
+
+            @Parameter(
+                names = {"--branch", "-b"},
+                arity = 1,
+                description = "Git branch on which backup of file changes should be committed (e.g. --branch myBackupBranch). Default is master"
+            )
+            private String gitBranch;
+
+            @Parameter(
                 names = {"--paths", "-p"},
                 converter = PathConverter.class,
                 validateWith = PathValidator.class,
-                required= true,
+                required = true,
                 description = "Paths with files which should be monitored (e.g. --paths /c/myDirToMonitor /c/mySecondDirToMonitor"
             )
             private List<Path> paths;

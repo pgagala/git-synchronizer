@@ -4,7 +4,7 @@ import org.apache.commons.io.FileUtils
 
 import static org.apache.commons.io.FileUtils.forceDeleteOnExit
 //TODO adjust logging
-class FileManager {
+public class FileManager {
 
     File targetFilePath
 

@@ -6,6 +6,8 @@ import spock.lang.Specification
 import java.nio.file.Path
 
 
+//TODO add cases for gitrepository path and branch
+@SuppressWarnings("GroovyAccessibility")
 class GitSynchronizerApplicationArgsParserSpec extends Specification {
 
 
@@ -21,7 +23,7 @@ class GitSynchronizerApplicationArgsParserSpec extends Specification {
 
         expect: "parsed parameters are as expected"
             parser.paths() == paths
-            parser.serverRemote() == serverRemote
+            parser.serverRemote().getValue() == serverRemote
 
         where:
             parameters                                                                    | paths         | serverRemote

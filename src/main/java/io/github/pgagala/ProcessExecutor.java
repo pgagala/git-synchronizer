@@ -16,7 +16,7 @@ import static java.lang.String.format;
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Slf4j
-class ProcessExecutor {
+public class ProcessExecutor {
 
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
     File executionLocation;

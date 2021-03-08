@@ -1,6 +1,7 @@
 package io.github.pgagala;
 
 import lombok.AccessLevel;
+import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -25,36 +26,37 @@ import static java.util.List.of;
 //TODO run integration tests on windows os as well
 class GitService {
 
+    public static final GitBranch DEFAULT_BRANCH = new GitBranch("master");
     private static final String DOCKER = "docker";
     private static final List<String> dockerGitInvocationPrefixWithNetwork = of(DOCKER, "run", "--rm", "--network");
     private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm");
     private static final List<String> dockerGitInvocationSuffix = of("-v", System.getenv("HOME") + "/.ssh:/root/.ssh", "alpine/git:user");
     private static final String NEW_LINE = "/n";
     List<String> dockerGitInvocationCommand;
-    File gitRepositoryFile;
-    String gitServerRemote;
+    File gitRepositoryLocalFile;
+    GitServerRemote gitServerRemote;
+    GitBranch gitBranch;
     ProcessExecutor processExecutor;
 
-    GitService(String gitRepositoryPath, String gitServerRemote) {
-        this.gitRepositoryFile = new File(gitRepositoryPath);
-        this.gitServerRemote = gitServerRemote;
-        this.processExecutor = new ProcessExecutor(gitRepositoryFile);
+    GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch) {
+        this.gitRepositoryLocalFile = repositoryLocal.getValue();
+        this.gitServerRemote = serverRemote;
+        this.gitBranch = gitBranch;
+        this.processExecutor = new ProcessExecutor(this.gitRepositoryLocalFile);
         dockerGitInvocationCommand =
-            Stream.of(dockerGitInvocationPrefix, of("-v", gitRepositoryPath + ":/git"), dockerGitInvocationSuffix)
+            Stream.of(dockerGitInvocationPrefix, of("-v", repositoryLocal.getValue() + ":/git"), dockerGitInvocationSuffix)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    GitService(String gitServerRemote) throws IOException {
-        this(Files.createTempDirectory("git-synchronizer-temp-repository").toFile().getAbsolutePath(), gitServerRemote);
-    }
-
-    GitService(String gitRepositoryPath, String gitServerRemote, String gitServerNetwork) {
-        this.gitRepositoryFile = new File(gitRepositoryPath);
-        this.gitServerRemote = gitServerRemote;
-        this.processExecutor = new ProcessExecutor(gitRepositoryFile);
+    GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch, String gitServerNetwork) {
+        this.gitRepositoryLocalFile = repositoryLocal.getValue();
+        this.gitServerRemote = serverRemote;
+        this.gitBranch = gitBranch;
+        this.processExecutor = new ProcessExecutor(repositoryLocal.getValue());
         dockerGitInvocationCommand =
-            Stream.of(dockerGitInvocationPrefixWithNetwork, of(gitServerNetwork, "-v", gitRepositoryPath + ":/git"), dockerGitInvocationSuffix)
+            Stream.of(dockerGitInvocationPrefixWithNetwork, of(gitServerNetwork, "-v", gitRepositoryLocalFile.getAbsolutePath() + ":/git"),
+                dockerGitInvocationSuffix)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toUnmodifiableList());
     }
@@ -62,16 +64,16 @@ class GitService {
     void createRepository() throws InterruptedException, IOException {
         createRepositoryFolderIfDoesNotExist();
         log.info("Creating repository under path: {}. Files will be synchronized in that repository. " +
-            "After program shutdown that will be automatically cleaned up", gitRepositoryFile.getAbsolutePath());
-        Response response = Response.of(initRepository(), addRemote());
+            "After program shutdown that will be automatically cleaned up", gitRepositoryLocalFile.getAbsolutePath());
+        Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch());
         if (response.isFailure()) {
             throw new IllegalStateException("Error during creating repository: " + response.result());
         }
     }
 
     private void createRepositoryFolderIfDoesNotExist() throws IOException {
-        if (!gitRepositoryFile.exists()) {
-            Files.createDirectory(gitRepositoryFile.toPath());
+        if (!gitRepositoryLocalFile.exists()) {
+            Files.createDirectory(gitRepositoryLocalFile.toPath());
         }
     }
 
@@ -80,18 +82,24 @@ class GitService {
         return processExecutor.execute(initCommand, "git init");
     }
 
+    private Response createNewBranchAndSwitch() throws InterruptedException {
+        List<String> initCommand = getDockerGitCommandForLocalExecution(of("checkout", "-b", gitBranch.getValue()));
+        return processExecutor.execute(initCommand, "git checkout -b");
+    }
+
     private Response addRemote() throws InterruptedException {
-        List<String> addingRemoteCommand = getDockerGitCommandForLocalExecution(of("remote", "add", "origin", gitServerRemote));
+        List<String> addingRemoteCommand = getDockerGitCommandForLocalExecution(of("remote", "add", "origin", gitServerRemote.getValue()));
         return processExecutor.execute(addingRemoteCommand, format("git adding remote %s", gitServerRemote));
     }
 
     //TODO throw or stay with response ?
     Response deleteRepository() {
         try {
-            FileUtils.forceDelete(gitRepositoryFile);
+            FileUtils.forceDelete(gitRepositoryLocalFile);
             return Response.success();
         } catch (IOException exc) {
-            String errorMsg = String.format("Unsuccessful deleting repository under path: %s. Error msg: %s", gitRepositoryFile.getAbsolutePath(),
+            String errorMsg = String.format("Unsuccessful deleting repository under path: %s. Error msg: %s",
+                gitRepositoryLocalFile.getAbsolutePath(),
                 exc.getMessage());
             log.error(errorMsg);
             return Response.failure(errorMsg);
@@ -108,10 +116,7 @@ class GitService {
             getCommitMessage(fileChanges)));
         Response committingResp = processExecutor.execute(commitCommand, "git committing");
 
-        String branch = processExecutor.execute(of("git", "branch", "--show-current"), "git branch")
-            .result()
-            .split("\n")[0];
-        List<String> pushingToOriginCommand = getDockerGitCommandForLocalExecution(of("push", "origin", branch));
+        List<String> pushingToOriginCommand = getDockerGitCommandForLocalExecution(of("push", "origin", gitBranch.getValue()));
         Response pushingResp = processExecutor.execute(pushingToOriginCommand, "git pushing to origin");
 
         return Response.of(addingResp, committingResp, pushingResp);
@@ -129,4 +134,19 @@ class GitService {
 
         return dockerCommand;
     }
+}
+
+@Value
+class GitServerRemote {
+    String value;
+}
+
+@Value
+class GitRepositoryLocal {
+    File value;
+}
+
+@Value
+class GitBranch {
+    String value;
 }
