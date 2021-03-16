@@ -26,7 +26,7 @@ class RepositoryBootstrapIntegrationSpec extends IntegrationSpec {
         }
     }
 
-    def "On system start repository should be initialized if repo doesn't exist"() {
+    def "On initialization repository should be created if repo doesn't exist"() {
         when: "Bootstrap is initialized"
             repositoryBootstrap.initialize()
 
@@ -34,7 +34,7 @@ class RepositoryBootstrapIntegrationSpec extends IntegrationSpec {
             assertRepositoryCreatedByBootstrapExists()
     }
 
-    def "On system start repository should be discarded and initialized if repo exists"() {
+    def "On initialization repository should be discarded and created if repo exists"() {
         given: "Already existing repository with some content"
             createRepository()
 

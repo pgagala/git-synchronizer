@@ -91,6 +91,10 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             assertGitLogContains(file, "deleted", newBranch)
     }
 
+    def "Should pull first files from remote git server during repository creation"() {
+
+    }
+
     private boolean assertGitLogContains(File file, String logEvent, GitBranch branch = GitService.DEFAULT_BRANCH) {
         processExecutor.execute(["cat", "${testFolder.getAbsolutePath()}/.git/logs/refs/heads/$branch.value".toString()], "cat file")
                 .result()

@@ -95,6 +95,9 @@ class GitService {
     //TODO throw or stay with response ?
     Response deleteRepository() {
         try {
+            if(!gitRepositoryLocalFile.exists()) {
+                return Response.success();
+            }
             FileUtils.forceDelete(gitRepositoryLocalFile);
             return Response.success();
         } catch (IOException exc) {

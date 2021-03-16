@@ -21,7 +21,8 @@ class RepositoryBootstrap {
         deleteRepository();
     }
 
+    //TODO exception if deletion wasn't successful
     private void deleteRepository() {
-        gitService.deleteRepository();
+        Response response = gitService.deleteRepository();
     }
 }

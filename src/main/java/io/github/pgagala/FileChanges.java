@@ -6,9 +6,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
+import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.nio.file.WatchEvent;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -19,45 +20,33 @@ import static java.lang.String.format;
 @EqualsAndHashCode
 class FileChanges implements Iterable<FileChange> {
 
-    private final List<FileChange> fileChanges;
+    private final List<FileChange> changes;
 
-    FileChanges(List<FileChange> fileChanges) {
-        this.fileChanges = Collections.unmodifiableList(fileChanges);
+    FileChanges(List<FileChange> changes) {
+        this.changes = Collections.unmodifiableList(changes);
     }
 
+    //TODO check if unmodifable
     @Override
-    public Iterator<FileChange> iterator() {
-        return new ArrayList<>(fileChanges).iterator();
-    }
-
-    FileChanges add(FileChange fileChange) {
-        List<FileChange> copiedElements = new ArrayList<>(fileChanges);
-        copiedElements.add(fileChange);
-
-        return new FileChanges(copiedElements);
-    }
-
-    FileChanges add(FileChanges fileChangesToAdd) {
-        ArrayList<FileChange> newFileChanges = new ArrayList<>(this.fileChanges);
-        newFileChanges.addAll(fileChangesToAdd.fileChanges);
-
-        return new FileChanges(newFileChanges);
+    public @NotNull Iterator<FileChange> iterator() {
+        return changes.iterator();
     }
 
     boolean isEmpty() {
-        return this.fileChanges.isEmpty();
+        return this.changes.isEmpty();
     }
 }
 
 interface FileChange {
     String getLogMessage();
+    Object getFileName();
 }
 
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-@EqualsAndHashCode
 @ToString
+@EqualsAndHashCode
 class FileModified implements FileChange {
 
     static FileModified of(WatchEvent<?> event) {
@@ -65,37 +54,41 @@ class FileModified implements FileChange {
     }
 
     @Getter
-    Object context;
+    Object fileName;
 
     @Override
     public String getLogMessage() {
-        return format("File changed: %s", context);
+        return format("File changed: %s", fileName);
     }
 }
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-@EqualsAndHashCode
 @ToString
+@EqualsAndHashCode
 class FileCreated implements FileChange {
 
     static FileCreated of(WatchEvent<?> event) {
         return new FileCreated(event.context());
     }
 
+    static FileCreated of(File file) {
+        return new FileCreated(file.getName());
+    }
+
     @Getter
-    Object context;
+    Object fileName;
 
     @Override
     public String getLogMessage() {
-        return format("File created: %s", context);
+        return format("File created: %s", fileName);
     }
 }
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-@EqualsAndHashCode
 @ToString
+@EqualsAndHashCode
 class FileDeleted implements FileChange {
 
     static FileDeleted of(WatchEvent<?> event) {
@@ -103,10 +96,10 @@ class FileDeleted implements FileChange {
     }
 
     @Getter
-    Object context;
+    Object fileName;
 
     @Override
     public String getLogMessage() {
-        return format("File deleted: %s", context);
+        return format("File deleted: %s", fileName);
     }
 }

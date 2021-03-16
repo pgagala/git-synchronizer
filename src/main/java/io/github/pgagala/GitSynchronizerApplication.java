@@ -5,7 +5,9 @@ import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,9 +17,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 //TODO - add gui javafx (https://openjfx.io/)
+@Slf4j
 public class GitSynchronizerApplication {
     // paths to listening on defined via args to main, commit interval as well. SSH should be earlier set up.
     // recognize if something is file or folder path.toFile().isFile()
@@ -34,20 +39,36 @@ public class GitSynchronizerApplication {
     // only after updating watched file)
 
     public static void main(String[] args) throws IOException, InterruptedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(2,
+            new ThreadFactoryBuilder().setNameFormat("git-synchronizer-app-%d").build());
         GitSynchronizerApplicationArgsParser appArgs = new GitSynchronizerApplicationArgsParser(args);
+        printStartMsg(appArgs);
 
         FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), appArgs.paths());
-        fileWatcher.run();
-
+        executorService.submit(fileWatcher::run);
         GitService gitService = new GitService(appArgs.serverRemote(), appArgs.repositoryPath(), appArgs.gitBranch());
         RepositoryBootstrap repositoryBootstrap = new RepositoryBootstrap(gitService);
         repositoryBootstrap.initialize();
-        new FileSynchronizer(fileWatcher, gitService).run();
+        addShutdownHook(repositoryBootstrap);
+        executorService.submit(() -> new FileSynchronizer(fileWatcher, gitService).run());
 
-        System.out.println("App started");
+        log.info("Git synchronizer started");
+    }
 
-        //TODO do on shutdown
-//        repositoryBootstrap.cleanup();
+    private static void addShutdownHook(RepositoryBootstrap repositoryBootstrap) {
+        Runtime.getRuntime().addShutdownHook(new Thread(repositoryBootstrap::cleanup));
+    }
+
+    private static void printStartMsg(GitSynchronizerApplicationArgsParser appArgs) throws IOException {
+        String startMsg =
+            String.format("""
+                Git synchronizer starting with following parameters:
+                - server remote : %s
+                - watching paths: %s
+                - repository path: %s
+                - git branch: %s
+                """, appArgs.serverRemote().getValue(), appArgs.paths(), appArgs.repositoryPath().getValue(), appArgs.gitBranch().getValue());
+        log.info(startMsg);
     }
 
     private static class GitSynchronizerApplicationArgsParser {
@@ -65,6 +86,13 @@ public class GitSynchronizerApplication {
             return new GitServerRemote(applicationArgs.gitServerRemote);
         }
 
+        List<Path> paths() {
+            applicationArgs.paths = applicationArgs.paths.stream()
+                .distinct()
+                .collect(Collectors.toUnmodifiableList());
+            return Collections.unmodifiableList(applicationArgs.paths);
+        }
+
         GitRepositoryLocal repositoryPath() throws IOException {
             return applicationArgs.gitRepositoryPath != null ?
                 new GitRepositoryLocal(new File(applicationArgs.gitRepositoryPath)) :
@@ -73,13 +101,6 @@ public class GitSynchronizerApplication {
 
         GitBranch gitBranch() {
             return applicationArgs.gitBranch != null ? new GitBranch(applicationArgs.gitBranch) : GitService.DEFAULT_BRANCH;
-        }
-
-        List<Path> paths() {
-            applicationArgs.paths = applicationArgs.paths.stream()
-                .distinct()
-                .collect(Collectors.toUnmodifiableList());
-            return Collections.unmodifiableList(applicationArgs.paths);
         }
 
         private class ApplicationArgs {
@@ -92,6 +113,16 @@ public class GitSynchronizerApplication {
                 validateWith = GitServerRemoteValidator.class
             )
             private String gitServerRemote;
+
+
+            @Parameter(
+                names = {"--paths", "-p"},
+                converter = PathConverter.class,
+                validateWith = PathValidator.class,
+                required = true,
+                description = "Paths with files which should be monitored (e.g. --paths /c/myDirToMonitor /c/mySecondDirToMonitor"
+            )
+            private List<Path> paths;
 
             @Parameter(
                 names = {"--repositoryPath", "-r"},
@@ -109,14 +140,6 @@ public class GitSynchronizerApplication {
             )
             private String gitBranch;
 
-            @Parameter(
-                names = {"--paths", "-p"},
-                converter = PathConverter.class,
-                validateWith = PathValidator.class,
-                required = true,
-                description = "Paths with files which should be monitored (e.g. --paths /c/myDirToMonitor /c/mySecondDirToMonitor"
-            )
-            private List<Path> paths;
         }
     }
 
@@ -142,7 +165,7 @@ public class GitSynchronizerApplication {
 
     public static class GitServerRemoteValidator implements IParameterValidator {
 
-        private static final String GIT_SERVER_REMOTE = "^git@[^,:]+\\.[^,]+:[^,.]+\\.git$";
+        private static final String GIT_SERVER_REMOTE = "^[^,]+/[^,]+\\.git$";
 
         @Override
         public void validate(String name, String value) {

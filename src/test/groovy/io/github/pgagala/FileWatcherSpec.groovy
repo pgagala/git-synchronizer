@@ -13,6 +13,32 @@ class FileWatcherSpec extends Specification implements FileWatcherSampleData {
     public static final File FILE1 = new File("file1")
     public static final File FILE2 = new File("file2")
 
+    def "On start files from watched paths should be added as created events"() {
+        given: "file watcher with paths"
+            File file = Mock(File) {
+                listFiles() >> [it]
+                getName() >> FILE1.name
+            }
+            File file2 = Mock(File) {
+                listFiles() >> [it]
+                getName() >> FILE2.name
+            }
+
+            Path path = Mock(Path) {
+                toFile() >> file
+            }
+            Path path2 = Mock(Path) {
+                toFile() >> file2
+            }
+
+            FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [path, path2])
+
+        when: "file watcher is started"
+            fileWatcher.run()
+        then: "files situated under paths should be returned as created file events"
+            fileWatcher.occurredFileChanges() == fileChanges([fileCreated(FILE1), fileCreated(FILE2)])
+    }
+
     def "occurredEvents should returned events without duplication"() {
         given: "Watch service which returned particular events"
             WatchKey key = Mock(WatchKey) {
@@ -21,14 +47,19 @@ class FileWatcherSpec extends Specification implements FileWatcherSampleData {
             WatchService watchService = Mock(WatchService) {
                 take() >> key
             }
-            FileWatcher fileWatcher = new FileWatcher(watchService, [Mock(Path)])
+            File file = Mock(File) {
+                listFiles() >> []
+            }
+            FileWatcher fileWatcher = new FileWatcher(watchService, [Mock(Path) {
+                toFile() >> file
+            }])
 
         when: "File watcher is started"
             fileWatcher.run()
 
         then: "Events without duplication in correct order are returned"
             new PollingConditions(timeout: 2).eventually {
-                assert expectedFileChanges == fileWatcher.occurredFileChanges()
+                assert fileWatcher.occurredFileChanges() == expectedFileChanges
             }
 
         where:
@@ -38,11 +69,13 @@ class FileWatcherSpec extends Specification implements FileWatcherSampleData {
             [eventDelete(FILE1), eventDelete(FILE1)]                                         | fileChanges([fileDeleted(FILE1)])
             [eventCreate(FILE1), eventDelete(FILE2), eventDelete(FILE2), eventModify(FILE1)] | fileChanges([fileCreated(FILE1), fileDeleted(FILE2), fileModified(FILE1)])
             [eventModify(FILE1), eventDelete(FILE2), eventCreate(FILE1), eventDelete(FILE2)] | fileChanges([fileModified(FILE1), fileDeleted(FILE2), fileCreated(FILE1)])
+            [eventCreate(FILE1), eventDelete(FILE2), eventModify(FILE1), eventCreate(FILE1)] | fileChanges([fileCreated(FILE1), fileDeleted(FILE2), fileModified(FILE1)])
     }
 
     def "equal of file changes should work correctly"() {
         expect:
             (expectedFileChanges == fileChangesToCheck) == result
+            (fileChangesToCheck == expectedFileChanges) == result
 
         where:
             expectedFileChanges                                    | fileChangesToCheck                                     || result
@@ -55,6 +88,5 @@ class FileWatcherSpec extends Specification implements FileWatcherSampleData {
             fileChanges([fileModified(FILE1)])                     | fileChanges([fileCreated(FILE1)])                      || false
             fileChanges([fileModified(FILE1)])                     | fileChanges([fileModified(FILE1), fileCreated(FILE1)]) || false
             fileChanges([fileModified(FILE1), fileCreated(FILE1)]) | fileChanges([fileModified(FILE1)])                     || false
-            fileChanges([fileModified(FILE1), fileCreated(FILE1)]) | fileChanges([fileCreated(FILE1), fileModified(FILE1)]) || false
     }
 }

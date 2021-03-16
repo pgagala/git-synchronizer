@@ -12,12 +12,13 @@ class GitSynchronizerApplicationArgsParserSpec extends Specification {
 
 
     public static final String GIT_SERVER_REMOTE = "git@github.com:pgagala/git-synchronizer.git"
+    public static final String GIT_SERVER_REMOTE2 = "http://172.25.0.2/test_repository.git"
     public static final String PATH_LITERAL = "/bla"
     public static final String PATH_LITERAL2 = "/bla2"
     public static final Path PATH = Path.of(PATH_LITERAL)
     public static final Path PATH2 = Path.of(PATH_LITERAL2)
 
-    def "Should return correctly parsed parameters"() {
+    def "Should return correctly parsed mandatory parameters"() {
         given: "argument parser"
             GitSynchronizerApplication.GitSynchronizerApplicationArgsParser parser = new GitSynchronizerApplication.GitSynchronizerApplicationArgsParser(parameters)
 
@@ -30,6 +31,7 @@ class GitSynchronizerApplicationArgsParserSpec extends Specification {
             ["--paths", PATH_LITERAL, "--gitServerRemote", GIT_SERVER_REMOTE] as String[] | [PATH]        | GIT_SERVER_REMOTE
             ["-p", PATH_LITERAL, "--gitServerRemote", GIT_SERVER_REMOTE] as String[]      | [PATH]        | GIT_SERVER_REMOTE
             ["-p", PATH_LITERAL, "-g", GIT_SERVER_REMOTE] as String[]                     | [PATH]        | GIT_SERVER_REMOTE
+            ["-p", PATH_LITERAL, "-g", GIT_SERVER_REMOTE2] as String[]                    | [PATH]        | GIT_SERVER_REMOTE2
             ["-p", "$PATH_LITERAL,$PATH_LITERAL2", "-g", GIT_SERVER_REMOTE] as String[]   | [PATH, PATH2] | GIT_SERVER_REMOTE
     }
 
@@ -83,9 +85,8 @@ class GitSynchronizerApplicationArgsParserSpec extends Specification {
                     ["-p", "", "-g", GIT_SERVER_REMOTE] as String[],
                     ["-p", "-", "-g", GIT_SERVER_REMOTE] as String[],
                     ["-p", PATH_LITERAL, "-g", "git@github.com:pgagala/git-synchronizer"] as String[],
-                    ["-p", PATH_LITERAL, "-g", "gitgithub.com:pgagala/git-synchronizer.git"] as String[],
-                    ["-p", PATH_LITERAL, "-g", "git@githubcom:pgagala/git-synchronizer.git"] as String[],
-                    ["-p", PATH_LITERAL, "-g", "git@github.compgagala/git-synchronizer.git"] as String[]
+                    ["-p", PATH_LITERAL, "-g", "gitgithub.com:pgagalagit-synchronizer.git"] as String[],
+                    ["-p", PATH_LITERAL, "-g", "git@githubcom:pgagala/git-synchronizer.gi"] as String[],
             ]
     }
 

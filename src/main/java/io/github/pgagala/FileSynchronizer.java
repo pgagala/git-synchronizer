@@ -4,14 +4,14 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
+@Slf4j
 class FileSynchronizer {
 
     ExecutorService executorService =
@@ -19,23 +19,26 @@ class FileSynchronizer {
     FileWatcher fileWatcher;
     GitService gitService;
 
-    void run() throws IOException, InterruptedException {
+    void run() {
         executorService.submit(() -> {
             while (true) {
                 FileChanges fileChanges = fileWatcher.occurredFileChanges();
-                if(fileChanges.isEmpty()) {
+                if (fileChanges.isEmpty()) {
+                    pause();
                     continue;
                 }
-                for (val fileChange : fileChanges) {
-                    System.out.println("File change: " + fileChange.toString());
-                }
+                log.info("New file changes occurred on watching paths: {}", fileChanges);
                 gitService.commitChanges(fileChanges);
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
             }
         });
+    }
+
+    private void pause() {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            log.error("Error occurred during synchronizing files", e);
+            Thread.currentThread().interrupt();
+        }
     }
 }

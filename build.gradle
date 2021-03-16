@@ -11,7 +11,7 @@ repositories {
     mavenCentral()
 }
 
-sourceCompatibility = '14'
+sourceCompatibility = '15'
 
 dependencies {
     compile group: 'com.google.guava', name: 'guava', version: '30.0-jre'

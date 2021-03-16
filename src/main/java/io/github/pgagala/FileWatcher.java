@@ -4,7 +4,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,6 +12,7 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
+@Slf4j
 class FileWatcher {
     //TODO integration to test changes from different places
     //TODO cannot add files with same name from different paths
@@ -34,7 +36,7 @@ class FileWatcher {
         ENTRY_CREATE.name(), FileCreated::of,
         ENTRY_MODIFY.name(), FileModified::of,
         ENTRY_DELETE.name(), FileDeleted::of);
-    LinkedBlockingQueue<WatchEvent<?>> linkedBlockingQueue = new LinkedBlockingQueue<>();
+    LinkedBlockingQueue<FileChange> fileChanges = new LinkedBlockingQueue<>();
     ExecutorService executorService;
     WatchService watchService;
 
@@ -47,7 +49,15 @@ class FileWatcher {
     private void subscribePathsToWatcherService(List<Path> paths) throws IOException {
         for (Path path : paths) {
             path.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
+            addFilesToInitialFileCreatedEvents(path);
         }
+    }
+
+    private void addFilesToInitialFileCreatedEvents(Path path) {
+         Arrays.stream(path.toFile()
+             .listFiles())
+             .iterator()
+             .forEachRemaining(f -> fileChanges.add(FileCreated.of(f)));
     }
 
     void run() {
@@ -58,33 +68,28 @@ class FileWatcher {
                 try {
                     key = watchService.take();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    continue;
+                    Thread.currentThread().interrupt();
+                    return;
                 }
                 List<WatchEvent<?>> watchEvents = key.pollEvents();
                 if (watchEvents == null) {
                     continue;
                 }
-                linkedBlockingQueue.addAll(watchEvents);
+                fileChanges.addAll(toFileChanges(watchEvents));
                 poll = key.reset();
             }
         });
     }
 
-    //TODO
-    //
-    //then test on windows
-    //then acceptance integration spec
-    //testing ?
-    //optionally javafx
     FileChanges occurredFileChanges() {
-        List<WatchEvent<?>> events = new ArrayList<>();
-        linkedBlockingQueue.drainTo(events);
-        return toFileChanges(removeDuplicatedEvents(events));
+        List<FileChange> changes = new ArrayList<>();
+        fileChanges.drainTo(changes);
+
+        return new FileChanges(removeDuplicatedFileChanges(changes));
     }
 
-    private FileChanges toFileChanges(List<WatchEvent<?>> events) {
-        val fileChangesList = events
+    private List<FileChange> toFileChanges(List<WatchEvent<?>> events) {
+        return events
             .stream()
             .peek(event -> {
                     String eventName = event.kind().name();
@@ -95,23 +100,21 @@ class FileWatcher {
             )
             .map(event -> eventNameToFileChangeCreatorMapping.get(event.kind().name()).apply(event))
             .collect(Collectors.toUnmodifiableList());
-
-        return new FileChanges(fileChangesList);
     }
 
-    private List<WatchEvent<?>> removeDuplicatedEvents(List<WatchEvent<?>> watchEvents) {
-        return watchEvents.stream()
+    private List<FileChange> removeDuplicatedFileChanges(List<FileChange> fileChanges) {
+        return fileChanges.stream()
             .reduce(new ArrayList<>(),
-                (flattenEvents, event) -> {
-                    if (flattenEvents.stream()
-                        .noneMatch(ev -> ev.context().equals(event.context()) && ev.kind().equals(event.kind()))) {
-                        flattenEvents.add(event);
+                (uniqueFileChanges, fileChange) -> {
+                    if (uniqueFileChanges.stream()
+                        .noneMatch(existingFileChange -> existingFileChange.equals(fileChange))) {
+                        uniqueFileChanges.add(fileChange);
                     }
-                    return flattenEvents;
+                    return uniqueFileChanges;
                 },
-                (flattenEvents, events) -> {
-                    flattenEvents.addAll(events);
-                    return flattenEvents;
+                (uniqueFileChanges, fileChangesToAdd) -> {
+                    uniqueFileChanges.addAll(fileChangesToAdd);
+                    return uniqueFileChanges;
                 });
     }
 }
