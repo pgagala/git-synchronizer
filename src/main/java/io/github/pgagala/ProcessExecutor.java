@@ -4,12 +4,15 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 
@@ -27,6 +30,13 @@ public class ProcessExecutor {
             .command(commands));
     }
 
+    Response execute(List<String> commands, String description, Duration timeout) throws InterruptedException {
+        return executeProcess(description, new ProcessBuilder()
+            .directory(executionLocation)
+            .command(commands),
+            timeout);
+    }
+
     private Response executeProcess(String description, ProcessBuilder processBuilder) throws InterruptedException {
         try {
             return executeAndWaitUntilFinished(description, processBuilder.start());
@@ -35,15 +45,38 @@ public class ProcessExecutor {
         }
     }
 
+    private Response executeProcess(String description, ProcessBuilder processBuilder, Duration timeout) throws InterruptedException {
+        try {
+            return executeAndWaitForDuration(description, processBuilder.start(), timeout);
+        } catch (IOException exception) {
+            return Response.failure(format("Unsuccessful %s process execution, exception: %s", description, exception));
+        }
+    }
+
+    private Response executeAndWaitForDuration(String description, Process process, Duration duration) throws InterruptedException, IOException {
+        StringBuilder responseBuilder = getResponseBuilder(process);
+        boolean response = process.waitFor(duration.getSeconds(), TimeUnit.SECONDS);
+        if (!response) {
+            return printFailureResponseMessage(description, process);
+        }
+        return Response.success(responseBuilder.toString());
+    }
+
     private Response executeAndWaitUntilFinished(String description, Process process) throws InterruptedException, IOException {
         StringBuilder responseBuilder = getResponseBuilder(process);
         int responseCode = process.waitFor();
         if (responseCode != 0) {
-            log.error("Unsuccessful {} process execution: {}", description, process);
-            return Response.failure(format("Unsuccessful %s process execution: %s", description, process));
+            return printFailureResponseMessage(description, process);
         }
         return Response.success(responseBuilder.toString());
     }
+
+    @NotNull
+    private Response printFailureResponseMessage(String description, Process process) {
+        log.error("Unsuccessful {} process execution: {}", description, process);
+        return Response.failure(format("Unsuccessful %s process execution: %s", description, process));
+    }
+
 
     private StringBuilder getResponseBuilder(Process process) throws IOException {
         BufferedReader reader =

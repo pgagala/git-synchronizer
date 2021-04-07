@@ -19,8 +19,10 @@ abstract class IntegrationSpec extends Specification {
                 .withExposedService("git-server", 80)
                 .withRemoveImages(DockerComposeContainer.RemoveImages.ALL)
                 .waitingFor("git-server", Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(2)))
+                .withPull(true)
+                .withBuild(true)
         dockerComposeContainer.start()
-        def network = dockerComposeContainer.getContainerByServiceName("git-server_1").get().containerInfo.getNetworkSettings().getNetworks().find {it.key.contains("my-net")}
+        def network = dockerComposeContainer.getContainerByServiceName("git-server_1").get().containerInfo.getNetworkSettings().getNetworks().find { it.key.contains("my-net") }
         gitServerIp = network.value.ipAddress
         gitServerNetwork = network.key
     }

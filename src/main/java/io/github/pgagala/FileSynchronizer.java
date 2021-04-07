@@ -18,6 +18,7 @@ class FileSynchronizer {
         Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("file-synchronizer-thread-%d").build());
     FileWatcher fileWatcher;
     GitService gitService;
+    FileManager fileManager;
 
     void run() {
         executorService.submit(() -> {
@@ -28,6 +29,7 @@ class FileSynchronizer {
                     continue;
                 }
                 log.info("New file changes occurred on watching paths: {}", fileChanges);
+                fileManager.copy(fileChanges.files());
                 gitService.commitChanges(fileChanges);
             }
         });

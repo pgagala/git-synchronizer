@@ -1,12 +1,16 @@
 package io.github.pgagala
 
-import io.github.pgagala.util.FileManager
+
 import org.apache.commons.io.FileUtils
+import spock.lang.Timeout
 
 import java.nio.file.Files
+import java.util.concurrent.TimeUnit
 
 import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic
 
+@Timeout(value = 2, unit = TimeUnit.MINUTES)
+@SuppressWarnings("GroovyAccessibility")
 class GitServiceIntegrationSpec extends IntegrationSpec {
 
     public static final GitServerRemote GIT_REMOTE = new GitServerRemote("http://$gitServerIp/test_repository.git")
@@ -30,7 +34,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
 
     def "Git repository should be created and deleted"() {
         given: "Git service for random path"
-            GitService gitService = new GitService(GIT_REMOTE, new GitRepositoryLocal(testFolder), GitService.DEFAULT_BRANCH, gitServerNetwork)
+            GitService gitService = new GitService(GIT_REMOTE, new GitRepositoryLocal(testFolder), GitBranch.DEFAULT_BRANCH, gitServerNetwork)
 
         when: "Git is initialized"
             gitService.createRepository()
@@ -58,7 +62,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             file.createNewFile()
 
         when: "File is committed to repository"
-            def response = gitService.commitChanges(new FileChanges([new FileCreated(file)]))
+            def response = gitService.commitChanges(new FileChanges([FileCreated.of(file)]))
 
         then: "File should be successfully committed"
             response.isSuccessful()
@@ -70,7 +74,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             file.append("file modification")
 
         and: "File is committed to repository"
-            response = gitService.commitChanges(new FileChanges([new FileModified(file)]))
+            response = gitService.commitChanges(new FileChanges([FileModified.of(file)]))
 
         then: "File should be successfully committed"
             response.isSuccessful()
@@ -82,7 +86,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             file.delete()
 
         and: "File is committed to repository"
-            response = gitService.commitChanges(new FileChanges([new FileDeleted(file)]))
+            response = gitService.commitChanges(new FileChanges([FileDeleted.of(file)]))
 
         then: "File should be successfully committed"
             response.isSuccessful()
@@ -91,11 +95,7 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             assertGitLogContains(file, "deleted", newBranch)
     }
 
-    def "Should pull first files from remote git server during repository creation"() {
-
-    }
-
-    private boolean assertGitLogContains(File file, String logEvent, GitBranch branch = GitService.DEFAULT_BRANCH) {
+    private boolean assertGitLogContains(File file, String logEvent, GitBranch branch = GitBranch.DEFAULT_BRANCH) {
         processExecutor.execute(["cat", "${testFolder.getAbsolutePath()}/.git/logs/refs/heads/$branch.value".toString()], "cat file")
                 .result()
                 .contains("File $logEvent: ${file.getAbsolutePath()}")

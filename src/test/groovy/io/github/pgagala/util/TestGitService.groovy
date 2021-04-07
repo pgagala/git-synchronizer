@@ -3,7 +3,6 @@ package io.github.pgagala.util
 import io.github.pgagala.GitBranch
 import io.github.pgagala.GitRepositoryLocal
 import io.github.pgagala.GitServerRemote
-import io.github.pgagala.GitService
 import io.github.pgagala.ProcessExecutor
 import io.github.pgagala.Response
 
@@ -17,7 +16,7 @@ class TestGitService {
         this.network = network
     }
 
-    Response cloneRepository(GitServerRemote remote, GitRepositoryLocal location = executionLocation, GitBranch branch = GitService.DEFAULT_BRANCH) throws InterruptedException {
+    Response cloneRepository(GitServerRemote remote, GitRepositoryLocal location = executionLocation, GitBranch branch = GitBranch.DEFAULT_BRANCH) throws InterruptedException {
         def cmd = dockerGitPrefix(location.value) + ["clone", remote.value, "-b", branch.value]
         return new ProcessExecutor(executionLocation.getValue()).execute(cmd, "git clone")
     }

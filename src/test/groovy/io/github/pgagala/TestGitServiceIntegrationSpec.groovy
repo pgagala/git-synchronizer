@@ -1,15 +1,17 @@
 package io.github.pgagala
 
 
-import io.github.pgagala.util.FileManager
 import io.github.pgagala.util.TestGitService
 import org.apache.commons.io.FileUtils
+import spock.lang.Timeout
 
 import java.nio.file.Files
+import java.util.concurrent.TimeUnit
 
 import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic
 
 @SuppressWarnings("GroovyAccessibility")
+@Timeout(value = 2, unit = TimeUnit.MINUTES)
 class TestGitServiceIntegrationSpec extends IntegrationSpec {
 
     public static final def GIT_REMOTE = new GitServerRemote("http://$gitServerIp/test_repository.git")
@@ -47,7 +49,7 @@ class TestGitServiceIntegrationSpec extends IntegrationSpec {
             File fileToCommit =
                     new File(gitLocal.value.getPath() + "/file-" + randomAlphabetic(5)).with(true)
                             { it.createNewFile() }
-            gitService.commitChanges(new FileChanges([new FileCreated(fileToCommit)]))
+            gitService.commitChanges(new FileChanges([FileCreated.of(fileToCommit)]))
 
         when: "repository is cloned"
             testGitService.cloneRepository(GIT_REMOTE, clonedLocalGit, newBranch)
@@ -62,7 +64,7 @@ class TestGitServiceIntegrationSpec extends IntegrationSpec {
         and: "committed file"
             File fileToCommit = new File(gitLocal.value.getPath() + "/file-" + randomAlphabetic(5)).with(true)
                     { it.createNewFile() }
-            gitService.commitChanges(new FileChanges([new FileCreated(fileToCommit)]))
+            gitService.commitChanges(new FileChanges([FileCreated.of(fileToCommit)]))
         and: "cloned repository"
             testGitService.cloneRepository(GIT_REMOTE, clonedLocalGit, newBranch)
             def testRepoInClonedTestFolder = new File("${clonedLocalGit.value.toPath()}/test_repository")
@@ -70,7 +72,7 @@ class TestGitServiceIntegrationSpec extends IntegrationSpec {
         when: "committed file is changed"
             fileToCommit.append(RANDOM_TEXT)
         and: "file is committed"
-            gitService.commitChanges(new FileChanges([new FileModified(fileToCommit)]))
+            gitService.commitChanges(new FileChanges([FileModified.of(fileToCommit)]))
         and: "cloned repository is pulled"
             testGitService.pull(testRepoInClonedTestFolder)
         then: "changed file is present"

@@ -5,14 +5,16 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +33,6 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 @Slf4j
 class FileWatcher {
     //TODO integration to test changes from different places
-    //TODO cannot add files with same name from different paths
     Map<String, Function<WatchEvent<?>, FileChange>> eventNameToFileChangeCreatorMapping = Map.of(
         ENTRY_CREATE.name(), FileCreated::of,
         ENTRY_MODIFY.name(), FileModified::of,
@@ -39,11 +40,17 @@ class FileWatcher {
     LinkedBlockingQueue<FileChange> fileChanges = new LinkedBlockingQueue<>();
     ExecutorService executorService;
     WatchService watchService;
+    Function<File, Collection<File>> filesFetcher;
 
-    public FileWatcher(WatchService watchService, List<Path> paths) throws IOException {
+    public FileWatcher(WatchService watchService, List<Path> paths, Function<File, Collection<File>> filesFetcher) throws IOException {
         this.watchService = watchService;
         executorService = Executors.newFixedThreadPool(paths.size(), new ThreadFactoryBuilder().setNameFormat("file-watcher-thread-%d").build());
+        this.filesFetcher = filesFetcher;
         subscribePathsToWatcherService(Collections.unmodifiableList(paths));
+    }
+
+    public FileWatcher(WatchService watchService, List<Path> paths) throws IOException {
+        this(watchService, paths, f -> FileUtils.listFiles(f, null, true));
     }
 
     private void subscribePathsToWatcherService(List<Path> paths) throws IOException {
@@ -54,10 +61,18 @@ class FileWatcher {
     }
 
     private void addFilesToInitialFileCreatedEvents(Path path) {
-         Arrays.stream(path.toFile()
-             .listFiles())
-             .iterator()
-             .forEachRemaining(f -> fileChanges.add(FileCreated.of(f)));
+        filesFetcher.apply(path.toFile())
+            .stream()
+            .filter(File::isFile)
+            .forEach(f -> {
+                    FileCreated fileCreated = FileCreated.of(f);
+                    if (fileChanges.contains(fileCreated)) {
+                        log.error("There is already a synchronized file with same name as: " + fileCreated);
+                        throw new DuplicatedWatchedFileException("There is already a synchronized file with same name as: " + fileCreated);
+                    }
+                    fileChanges.add(fileCreated);
+                }
+            );
     }
 
     void run() {

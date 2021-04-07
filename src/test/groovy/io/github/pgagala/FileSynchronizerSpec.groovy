@@ -1,5 +1,6 @@
 package io.github.pgagala
 
+
 import org.mockito.Mockito
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -17,11 +18,16 @@ class FileSynchronizerSpec extends Specification implements FileWatcherSampleDat
             }
         and: "file synchronizer with mocked git service"
             GitService gitService = Mockito.mock(GitService)
-            fileSynchronizer = new FileSynchronizer(fileWatcher, gitService)
+            FileManager fileManager = Mockito.mock(FileManager)
+            fileSynchronizer = new FileSynchronizer(fileWatcher, gitService, fileManager)
 
         when: "synchronizer is started"
             fileSynchronizer.run()
-        then: "new files should be committed to git repository"
+        then: "new files should be copied to git repository"
+            new PollingConditions(timeout: 2).eventually {
+                toSpockVerification(Mockito.verify(fileManager).copy(filesChanges.files()))
+            }
+        and: "committed to git repository"
             new PollingConditions(timeout: 2).eventually {
                 toSpockVerification(Mockito.verify(gitService).commitChanges(filesChanges))
             }

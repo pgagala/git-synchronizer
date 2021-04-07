@@ -3,16 +3,22 @@ package io.github.pgagala
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import io.github.pgagala.util.TestGitService
 import org.apache.commons.io.FileUtils
+import spock.lang.Timeout
 import spock.util.concurrent.PollingConditions
 import sun.security.action.GetPropertyAction
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic
 
+@Timeout(value = 2, unit = TimeUnit.MINUTES)
+@SuppressWarnings("GroovyAccessibility")
+//@Ignore
 class AcceptanceIntegrationSpec extends IntegrationSpec {
 
     public static final GitServerRemote GIT_REMOTE = new GitServerRemote("http://$gitServerIp/test_repository.git")
@@ -31,6 +37,10 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
     File folder2FolderFile1
     File folder2FolderFile2
 
+    File folderWithDuplicates
+    File folderWithDuplicatesFolder
+    File folderWithDuplicatesFolderFile
+
     File testRepoFolder
     File clonedTestRepoFolder
 
@@ -38,15 +48,20 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         def testFolderName = "test_folder_" + randomAlphabetic(4)
         testFolder = Files.createTempDirectory(testFolderName).toFile().with(true) { it.createNewFile() }
         folder1 = new File("$testFolder.path/folder1").with(true) { it.mkdir() }
-        folder1File = new File("$testFolder.path/folder1/file").with(true) { it.createNewFile() }
+        folder1File = new File("$testFolder.path/folder1/file1.1").with(true) { it.createNewFile() }
         folder1Folder = new File("$testFolder.path/folder1/folder").with(true) { it.mkdir() }
-        folder1FolderFile1 = new File("$testFolder.path/folder1/folder/file").with(true) { it.createNewFile() }
-        folder1FolderFile2 = new File("$testFolder.path/folder1/folder/file2").with(true) { it.createNewFile() }
+        folder1FolderFile1 = new File("$testFolder.path/folder1/folder/file1.2").with(true) { it.createNewFile() }
+        folder1FolderFile2 = new File("$testFolder.path/folder1/folder/file1.3").with(true) { it.createNewFile() }
+
         folder2 = new File("$testFolder.path/folder2").with(true) { it.mkdir() }
-        folder2File = new File("$testFolder.path/folder2/file").with(true) { it.createNewFile() }
+        folder2File = new File("$testFolder.path/folder2/file2.1").with(true) { it.createNewFile() }
         folder2Folder = new File("$testFolder.path/folder2/folder").with(true) { it.mkdir() }
-        folder2FolderFile1 = new File("$testFolder.path/folder2/folder/file").with(true) { it.createNewFile() }
-        folder2FolderFile2 = new File("$testFolder.path/folder2/folder/file2").with(true) { it.createNewFile() }
+        folder2FolderFile1 = new File("$testFolder.path/folder2/folder/file2.2").with(true) { it.createNewFile() }
+        folder2FolderFile2 = new File("$testFolder.path/folder2/folder/file2.3").with(true) { it.createNewFile() }
+
+        folderWithDuplicates = new File("$testFolder.path/folderWithDuplicates").with(true) { it.mkdir() }
+        folderWithDuplicatesFolder = new File("$testFolder.path/folderWithDuplicates/folder").with(true) { it.mkdir() }
+        folderWithDuplicatesFolderFile = new File("$testFolder.path/folderWithDuplicates/folder/file").with(true) { it.mkdir() }
 
         def testRepoFolderName = "test_repo_${randomAlphabetic(4)}"
         testRepoFolder = new File("${Path.of(GetPropertyAction.privilegedGetProperty("java.io.tmpdir"))}/$testRepoFolderName")
@@ -68,50 +83,38 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         }
     }
 
-    def filesAmount(File file, String excludedPattern = null) {
-        assert file.exists()
-        return new FileNameByRegexFinder()
-                .getFileNames(file.getAbsolutePath(), ".", excludedPattern)
-                .size()
-
-//        def files = []
-//        file.eachFileRecurse { files += it }
-//        return files.size()
-    }
-
     def "acceptance test"() {
         given: "randomized branch"
-            def newBranch = "branch_${randomAlphabetic(4)}"
+            def newBranch = new GitBranch("branch_${randomAlphabetic(4)}")
 
         expect: "2 folders with files exist"
-            filesAmount(testFolder) == 10
+            filesAmount(testFolder) == 13
 
         when: "synchronizer is started (watching 2 folders)"
             ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("acceptance-test-%d").build())
-        GitSynchronizerApplication.main("-p", "$folder1.path,$folder2.path", "-g", GIT_REMOTE.value, "-b", newBranch, "-r", testRepoFolder.getAbsolutePath())
-//            Future<Boolean> job = executor.submit(() -> {
-//                GitSynchronizerApplication.main("-p", "$folder1.path,$folder2.path", "-g", GIT_REMOTE.value, "-b", newBranch, "-r", testRepoFolder.getAbsolutePath())
-//            }, true)
-//        sleep(3000)
-//            job.cancel(true)
-//        executor.shutdown()
-//        sleep(222000)
-//                    job.cancel(true)
-//        executor.shutdownNow()
-//            job.cancel(true)
 
-        then: "all files are copied to local synchronized repository folder"
-            new PollingConditions(timeout: 2).eventually {
-                assert filesAmount(testRepoFolder, "\\.git") == 10
+            CompletableFuture<Boolean> appStarted = new CompletableFuture<>()
+            executor.submit(() -> {
+                GitSynchronizerApplication.main("-p", "$folder1.path,$folder2.path", "-g", GIT_REMOTE.value, "-b", newBranch.value, "-r", testRepoFolder.getAbsolutePath(),
+                        "-n", gitServerNetwork)
+                appStarted.complete(true)
+                return appStarted
+            })
+
+        then: "app started"
+            new PollingConditions(timeout: 15).eventually {
+                appStarted.isDone() && !appStarted.isCompletedExceptionally()
             }
-
-//
+        and: "all files are copied to local synchronized repository folder"
+            new PollingConditions(timeout: 15).eventually {
+                assert filesAmount(testRepoFolder, "\\.git") == 6
+            }
 //        and: "folder1File is edited"
 //            folder1File.append("bla")
 //        then: "change is committed to repository"
 //        and: "should be visible in cloned repository"
 //            testGitService.cloneRepository(GIT_REMOTE, new GitRepositoryLocal(clonedTestRepoFolder), newBranch)
-//            clonedTestFolder.listFiles()[0].listFiles().any { it.name == folder1File.name }
+//            clonedTestRepoFolder.listFiles()[0].listFiles().any { it.name == folder1File.name }
 
 
 //        when: "folder1FolderFile1 is edited"
@@ -130,6 +133,13 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
 //        when: "application is shutted down"
 //
 //        then: "local synchronized repo is deleted"
+    }
+
+    static def filesAmount(File file, String excludedPattern = null) {
+        assert file.exists()
+        return new FileNameByRegexFinder()
+                .getFileNames(file.getAbsolutePath(), ".", excludedPattern)
+                .size()
     }
 
 }

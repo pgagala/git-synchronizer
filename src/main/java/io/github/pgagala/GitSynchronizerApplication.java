@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -38,20 +39,26 @@ public class GitSynchronizerApplication {
     //if nothing is on remote repo all watched files on start should be copied to that repo (synchronization although will be make
     // only after updating watched file)
 
+    @SuppressWarnings("java:S3655")
     public static void main(String[] args) throws IOException, InterruptedException {
-        ExecutorService executorService = Executors.newFixedThreadPool(2,
-            new ThreadFactoryBuilder().setNameFormat("git-synchronizer-app-%d").build());
         GitSynchronizerApplicationArgsParser appArgs = new GitSynchronizerApplicationArgsParser(args);
         printStartMsg(appArgs);
 
-        FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), appArgs.paths());
-        executorService.submit(fileWatcher::run);
-        GitService gitService = new GitService(appArgs.serverRemote(), appArgs.repositoryPath(), appArgs.gitBranch());
+        GitRepositoryLocal gitRepositoryLocal = appArgs.repositoryLocal();
+        GitService gitService = appArgs.network().isPresent() ?
+            new GitService(appArgs.serverRemote(), gitRepositoryLocal, appArgs.gitBranch(), appArgs.network().get()) :
+            new GitService(appArgs.serverRemote(), gitRepositoryLocal, appArgs.gitBranch());
         RepositoryBootstrap repositoryBootstrap = new RepositoryBootstrap(gitService);
-        repositoryBootstrap.initialize();
-        addShutdownHook(repositoryBootstrap);
-        executorService.submit(() -> new FileSynchronizer(fileWatcher, gitService).run());
+        FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), appArgs.paths());
+        FileManager fileManager = new FileManager(gitRepositoryLocal.getValue());
+        ExecutorService executorService = Executors.newFixedThreadPool(2,
+            new ThreadFactoryBuilder().setNameFormat("git-synchronizer-app-%d").build());
 
+        repositoryBootstrap.initialize();
+        executorService.submit(fileWatcher::run);
+        executorService.submit(() -> new FileSynchronizer(fileWatcher, gitService, fileManager).run());
+
+        addShutdownHook(repositoryBootstrap);
         log.info("Git synchronizer started");
     }
 
@@ -62,12 +69,14 @@ public class GitSynchronizerApplication {
     private static void printStartMsg(GitSynchronizerApplicationArgsParser appArgs) throws IOException {
         String startMsg =
             String.format("""
-                Git synchronizer starting with following parameters:
-                - server remote : %s
-                - watching paths: %s
-                - repository path: %s
-                - git branch: %s
-                """, appArgs.serverRemote().getValue(), appArgs.paths(), appArgs.repositoryPath().getValue(), appArgs.gitBranch().getValue());
+                    Git synchronizer starting with following parameters:
+                    - server remote : %s
+                    - watching paths: %s
+                    - repository path: %s
+                    - git branch: %s
+                    - git server network: %s
+                    """, appArgs.serverRemote().getValue(), appArgs.paths(), appArgs.repositoryLocal().getValue(), appArgs.gitBranch().getValue(),
+                appArgs.network().orElse(""));
         log.info(startMsg);
     }
 
@@ -93,17 +102,21 @@ public class GitSynchronizerApplication {
             return Collections.unmodifiableList(applicationArgs.paths);
         }
 
-        GitRepositoryLocal repositoryPath() throws IOException {
+        GitRepositoryLocal repositoryLocal() throws IOException {
             return applicationArgs.gitRepositoryPath != null ?
                 new GitRepositoryLocal(new File(applicationArgs.gitRepositoryPath)) :
                 new GitRepositoryLocal(Files.createTempDirectory("git-synchronizer-temp-repository").toFile());
         }
 
         GitBranch gitBranch() {
-            return applicationArgs.gitBranch != null ? new GitBranch(applicationArgs.gitBranch) : GitService.DEFAULT_BRANCH;
+            return applicationArgs.gitBranch != null ? new GitBranch(applicationArgs.gitBranch) : GitBranch.DEFAULT_BRANCH;
         }
 
-        private class ApplicationArgs {
+        Optional<String> network() {
+            return applicationArgs.network != null ? Optional.of(applicationArgs.network) : Optional.empty();
+        }
+
+        private static class ApplicationArgs {
             @Parameter(
                 names = {"--gitServerRemote", "-g"},
                 required = true,
@@ -140,6 +153,13 @@ public class GitSynchronizerApplication {
             )
             private String gitBranch;
 
+            @Parameter(
+                names = {"--network", "-n"},
+                arity = 1,
+                description = "Optional docker network. Default is none"
+            )
+            private String network;
+
         }
     }
 
@@ -153,7 +173,7 @@ public class GitSynchronizerApplication {
 
     public static class PathValidator implements IParameterValidator {
 
-        private static final String PATH = "^(\\/[^\\/ ]*)+\\/?$";
+        private static final String PATH = "^(/[^/ ]*)+/?$";
 
         @Override
         public void validate(String name, String value) {

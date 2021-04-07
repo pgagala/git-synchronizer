@@ -15,6 +15,7 @@ class RepositoryBootstrap {
     void initialize() throws InterruptedException, IOException {
         deleteRepository();
         gitService.createRepository();
+        gitService.pull();
     }
 
     void cleanup() {

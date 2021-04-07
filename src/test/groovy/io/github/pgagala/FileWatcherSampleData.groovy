@@ -11,7 +11,7 @@ trait FileWatcherSampleData {
     }
 
     FileModified fileModified(File file) {
-        return FileModified.of(eventModify(file))
+         return FileModified.of(eventModify(file))
     }
 
     FileCreated fileCreated(File file) {
@@ -23,15 +23,15 @@ trait FileWatcherSampleData {
     }
 
     def eventModify(File file) {
-        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_MODIFY, file.getPath())
+        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_MODIFY, file.getAbsolutePath())
     }
 
     def eventCreate(File file) {
-        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_CREATE, file.getPath())
+        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_CREATE, file.getAbsolutePath())
     }
 
     def eventDelete(File file) {
-        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_DELETE, file.getPath())
+        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_DELETE, file.getAbsolutePath())
     }
 
 }

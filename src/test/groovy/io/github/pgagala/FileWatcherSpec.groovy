@@ -16,27 +16,38 @@ class FileWatcherSpec extends Specification implements FileWatcherSampleData {
     def "On start files from watched paths should be added as created events"() {
         given: "file watcher with paths"
             File file = Mock(File) {
-                listFiles() >> [it]
                 getName() >> FILE1.name
+                getAbsolutePath() >> FILE1.getAbsolutePath()
+                isFile() >> true
             }
             File file2 = Mock(File) {
-                listFiles() >> [it]
                 getName() >> FILE2.name
+                getAbsolutePath() >> FILE2.getAbsolutePath()
+                isFile() >> true
             }
-
-            Path path = Mock(Path) {
-                toFile() >> file
-            }
-            Path path2 = Mock(Path) {
-                toFile() >> file2
-            }
-
-            FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [path, path2])
+            FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [Mock(Path)], {f -> [file, file2]})
 
         when: "file watcher is started"
             fileWatcher.run()
         then: "files situated under paths should be returned as created file events"
-            fileWatcher.occurredFileChanges() == fileChanges([fileCreated(FILE1), fileCreated(FILE2)])
+            FileChanges occurredFileChanges = fileWatcher.occurredFileChanges()
+            occurredFileChanges == fileChanges([FileCreated.of(file), FileCreated.of(file2)])
+            occurredFileChanges.files() == [file, file2]
+    }
+
+    def "Exception should be thrown on file watcher start if there are any files in watched paths with same file name"() {
+        given: "file watcher"
+            File file = Mock(File) {
+                listFiles() >> [it]
+                getName() >> FILE1.name
+                getAbsolutePath() >> FILE1.getAbsolutePath()
+                isFile() >> true
+            }
+
+        when: "file watcher with duplicated files is created"
+            new FileWatcher(Mock(WatchService), [Mock(Path)], {f -> [file, file]})
+        then: "exception should be thrown"
+            thrown DuplicatedWatchedFileException
     }
 
     def "occurredEvents should returned events without duplication"() {
@@ -50,9 +61,7 @@ class FileWatcherSpec extends Specification implements FileWatcherSampleData {
             File file = Mock(File) {
                 listFiles() >> []
             }
-            FileWatcher fileWatcher = new FileWatcher(watchService, [Mock(Path) {
-                toFile() >> file
-            }])
+            FileWatcher fileWatcher = new FileWatcher(watchService, [Mock(Path)], {f -> [file]})
 
         when: "File watcher is started"
             fileWatcher.run()
