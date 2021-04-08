@@ -51,12 +51,13 @@ public class GitSynchronizerApplication {
         RepositoryBootstrap repositoryBootstrap = new RepositoryBootstrap(gitService);
         FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), appArgs.paths());
         FileManager fileManager = new FileManager(gitRepositoryLocal.getValue());
+        FileSynchronizer fileSynchronizer = new FileSynchronizer(fileWatcher, gitService, fileManager);
         ExecutorService executorService = Executors.newFixedThreadPool(2,
             new ThreadFactoryBuilder().setNameFormat("git-synchronizer-app-%d").build());
 
         repositoryBootstrap.initialize();
         executorService.submit(fileWatcher::run);
-        executorService.submit(() -> new FileSynchronizer(fileWatcher, gitService, fileManager).run());
+        executorService.submit(fileSynchronizer::run);
 
         addShutdownHook(repositoryBootstrap);
         log.info("Git synchronizer started");

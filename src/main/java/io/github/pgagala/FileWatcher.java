@@ -16,14 +16,17 @@ import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.lang.String.format;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
@@ -33,7 +36,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 @Slf4j
 class FileWatcher {
     //TODO integration to test changes from different places
-    Map<String, Function<WatchEvent<?>, FileChange>> eventNameToFileChangeCreatorMapping = Map.of(
+    Map<String, BiFunction<WatchEvent<?>, Path, FileChange>> eventNameToFileChangeCreatorMapping = Map.of(
         ENTRY_CREATE.name(), FileCreated::of,
         ENTRY_MODIFY.name(), FileModified::of,
         ENTRY_DELETE.name(), FileDeleted::of);
@@ -41,11 +44,13 @@ class FileWatcher {
     ExecutorService executorService;
     WatchService watchService;
     Function<File, Collection<File>> filesFetcher;
+    Map<WatchKey, Path> watchKeysPathMap;
 
     public FileWatcher(WatchService watchService, List<Path> paths, Function<File, Collection<File>> filesFetcher) throws IOException {
         this.watchService = watchService;
         executorService = Executors.newFixedThreadPool(paths.size(), new ThreadFactoryBuilder().setNameFormat("file-watcher-thread-%d").build());
         this.filesFetcher = filesFetcher;
+        this.watchKeysPathMap = new HashMap<>();
         subscribePathsToWatcherService(Collections.unmodifiableList(paths));
     }
 
@@ -55,7 +60,7 @@ class FileWatcher {
 
     private void subscribePathsToWatcherService(List<Path> paths) throws IOException {
         for (Path path : paths) {
-            path.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
+            watchKeysPathMap.put(path.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE), path);
             addFilesToInitialFileCreatedEvents(path);
         }
     }
@@ -77,21 +82,26 @@ class FileWatcher {
 
     void run() {
         executorService.submit(() -> {
-            boolean poll = true;
-            while (poll) {
-                WatchKey key;
-                try {
-                    key = watchService.take();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
+            try {
+                boolean poll = true;
+                while (poll) {
+                    WatchKey key = watchService.take();
+                    List<WatchEvent<?>> watchEvents = key.pollEvents();
+                    if (watchEvents == null) {
+                        continue;
+                    }
+                    fileChanges.addAll(toFileChanges(watchEvents, watchKeysPathMap.get(key)));
+                    poll = key.reset();
                 }
-                List<WatchEvent<?>> watchEvents = key.pollEvents();
-                if (watchEvents == null) {
-                    continue;
-                }
-                fileChanges.addAll(toFileChanges(watchEvents));
-                poll = key.reset();
+                //TODO if throwing that here will be shown in 102 ?
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error(format("Interrupted exception during watching paths: %s for file events. %n Exception: %s", watchKeysPathMap.values(), e));
+                throw new IllegalStateException(e.getMessage(), e);
+            } catch (Exception e) {
+                Thread.currentThread().interrupt();
+                log.error(format("Exception during watching paths: %s for file events. %n Exception: %s", watchKeysPathMap.values(), e));
+                throw e;
             }
         });
     }
@@ -103,7 +113,7 @@ class FileWatcher {
         return new FileChanges(removeDuplicatedFileChanges(changes));
     }
 
-    private List<FileChange> toFileChanges(List<WatchEvent<?>> events) {
+    private List<FileChange> toFileChanges(List<WatchEvent<?>> events, Path path) {
         return events
             .stream()
             .peek(event -> {
@@ -113,7 +123,7 @@ class FileWatcher {
                     }
                 }
             )
-            .map(event -> eventNameToFileChangeCreatorMapping.get(event.kind().name()).apply(event))
+            .map(event -> eventNameToFileChangeCreatorMapping.get(event.kind().name()).apply(event, path))
             .collect(Collectors.toUnmodifiableList());
     }
 

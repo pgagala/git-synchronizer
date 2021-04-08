@@ -1,12 +1,15 @@
 package io.github.pgagala
 
-
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.nio.file.Path
 import java.nio.file.WatchKey
 import java.nio.file.WatchService
+
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE
+import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY
 
 class FileWatcherSpec extends Specification implements FileWatcherSampleData {
 
@@ -25,7 +28,7 @@ class FileWatcherSpec extends Specification implements FileWatcherSampleData {
                 getAbsolutePath() >> FILE2.getAbsolutePath()
                 isFile() >> true
             }
-            FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [Mock(Path)], {f -> [file, file2]})
+            FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [Mock(Path)], { f -> [file, file2] })
 
         when: "file watcher is started"
             fileWatcher.run()
@@ -45,7 +48,7 @@ class FileWatcherSpec extends Specification implements FileWatcherSampleData {
             }
 
         when: "file watcher with duplicated files is created"
-            new FileWatcher(Mock(WatchService), [Mock(Path)], {f -> [file, file]})
+            new FileWatcher(Mock(WatchService), [Mock(Path)], { f -> [file, file] })
         then: "exception should be thrown"
             thrown DuplicatedWatchedFileException
     }
@@ -61,7 +64,11 @@ class FileWatcherSpec extends Specification implements FileWatcherSampleData {
             File file = Mock(File) {
                 listFiles() >> []
             }
-            FileWatcher fileWatcher = new FileWatcher(watchService, [Mock(Path)], {f -> [file]})
+            def watchedPaths = [Mock(Path) {
+                toString() >> "/"
+                register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
+            }]
+            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [file] })
 
         when: "File watcher is started"
             fileWatcher.run()

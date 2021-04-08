@@ -18,7 +18,6 @@ import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtil
 
 @Timeout(value = 2, unit = TimeUnit.MINUTES)
 @SuppressWarnings("GroovyAccessibility")
-//@Ignore
 class AcceptanceIntegrationSpec extends IntegrationSpec {
 
     public static final GitServerRemote GIT_REMOTE = new GitServerRemote("http://$gitServerIp/test_repository.git")
@@ -41,7 +40,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
     File folderWithDuplicatesFolder
     File folderWithDuplicatesFolderFile
 
-    File testRepoFolder
+    File synchronizedRepoFolder
     File clonedTestRepoFolder
 
     def setup() {
@@ -63,8 +62,8 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         folderWithDuplicatesFolder = new File("$testFolder.path/folderWithDuplicates/folder").with(true) { it.mkdir() }
         folderWithDuplicatesFolderFile = new File("$testFolder.path/folderWithDuplicates/folder/file").with(true) { it.mkdir() }
 
-        def testRepoFolderName = "test_repo_${randomAlphabetic(4)}"
-        testRepoFolder = new File("${Path.of(GetPropertyAction.privilegedGetProperty("java.io.tmpdir"))}/$testRepoFolderName")
+        def synchronizedRepoFolderName = "test_repo_${randomAlphabetic(4)}"
+        synchronizedRepoFolder = new File("${Path.of(GetPropertyAction.privilegedGetProperty("java.io.tmpdir"))}/$synchronizedRepoFolderName")
 
         def clonedTestRepoFolderName = "cloned_test_repo_${randomAlphabetic(4)}"
         clonedTestRepoFolder = Files.createTempDirectory(clonedTestRepoFolderName).toFile()
@@ -75,8 +74,8 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         if (testFolder.exists()) {
             FileUtils.forceDelete(testFolder)
         }
-        if (testRepoFolder.exists()) {
-            FileUtils.forceDelete(testRepoFolder)
+        if (synchronizedRepoFolder.exists()) {
+            FileUtils.forceDelete(synchronizedRepoFolder)
         }
         if (clonedTestRepoFolder.exists()) {
             FileUtils.forceDelete(clonedTestRepoFolder)
@@ -95,7 +94,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
 
             CompletableFuture<Boolean> appStarted = new CompletableFuture<>()
             executor.submit(() -> {
-                GitSynchronizerApplication.main("-p", "$folder1.path,$folder2.path", "-g", GIT_REMOTE.value, "-b", newBranch.value, "-r", testRepoFolder.getAbsolutePath(),
+                GitSynchronizerApplication.main("-p", "$folder1.path,$folder2.path", "-g", GIT_REMOTE.value, "-b", newBranch.value, "-r", synchronizedRepoFolder.getAbsolutePath(),
                         "-n", gitServerNetwork)
                 appStarted.complete(true)
                 return appStarted
@@ -107,11 +106,16 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
             }
         and: "all files are copied to local synchronized repository folder"
             new PollingConditions(timeout: 15).eventually {
-                assert filesAmount(testRepoFolder, "\\.git") == 6
+                assert filesAmount(synchronizedRepoFolder, "\\.git") == 6
             }
-//        and: "folder1File is edited"
-//            folder1File.append("bla")
-//        then: "change is committed to repository"
+
+        when: "folder1File is edited"
+            folder1File.append("bla")
+        then: "changed file is copied to synchronized repository"
+            new PollingConditions(timeout: 15).eventually {
+                new File("$synchronizedRepoFolder/$folder1File.name").text.endsWith("bla")
+            }
+
 //        and: "should be visible in cloned repository"
 //            testGitService.cloneRepository(GIT_REMOTE, new GitRepositoryLocal(clonedTestRepoFolder), newBranch)
 //            clonedTestRepoFolder.listFiles()[0].listFiles().any { it.name == folder1File.name }

@@ -10,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.util.Collections;
 import java.util.Iterator;
@@ -47,11 +48,15 @@ class FileChanges implements Iterable<FileChange> {
 }
 
 interface FileChange {
-    String fileName();
     boolean isFile();
     File file();
 }
 
+class FileChangeUtils {
+    static String eventPath(WatchEvent<?> event, Path path) {
+        return path.toString() + "/" + event.context().toString();
+    }
+}
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
@@ -59,13 +64,14 @@ interface FileChange {
 @Accessors(fluent = true)
 class FileModified implements FileChange {
 
-    static FileModified of(WatchEvent<?> event) {
-        String path = (String) event.context();
-        return new FileModified(new File(path), path);
+    //TODO exception here should be raised
+    static FileModified of(WatchEvent<?> event, Path path) {
+        String eventPath = FileChangeUtils.eventPath(event, path);
+        return new FileModified(new File(eventPath), eventPath);
     }
 
     static FileModified of(File file) {
-        return new FileModified(file, file.getName());
+        return new FileModified(file, file.toPath().toString());
     }
 
     @Getter
@@ -92,9 +98,9 @@ class FileModified implements FileChange {
 @Accessors(fluent = true)
 class FileCreated implements FileChange {
 
-    static FileCreated of(WatchEvent<?> event) {
-        String path = (String) event.context();
-        return new FileCreated(new File(path), path);
+    static FileCreated of(WatchEvent<?> event, Path path) {
+        String eventPath = FileChangeUtils.eventPath(event, path);
+        return new FileCreated(new File(eventPath), eventPath);
     }
 
     static FileCreated of(File file) {
@@ -125,9 +131,9 @@ class FileCreated implements FileChange {
 @Accessors(fluent = true)
 class FileDeleted implements FileChange {
 
-    static FileDeleted of(WatchEvent<?> event) {
-        String path = (String) event.context();
-        return new FileDeleted(new File(path), path);
+    static FileDeleted of(WatchEvent<?> event, Path path) {
+        String eventPath = FileChangeUtils.eventPath(event, path);
+        return new FileDeleted(new File(eventPath), eventPath);
     }
 
     static FileDeleted of(File file) {
