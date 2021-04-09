@@ -6,8 +6,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -32,7 +34,12 @@ class FileSynchronizer {
                         continue;
                     }
                     log.info("New file changes occurred on watched paths:\n{}", fileChanges);
-                    fileManager.copy(fileChanges.files());
+                    fileManager.copy(fileChanges.newOrModifiedFiles());
+                    fileManager.deleteFromTargetPath(
+                        fileChanges.deletedFiles()
+                            .stream()
+                            .map(File::getName)
+                            .collect(Collectors.toUnmodifiableList()));
                     gitService.commitChanges(fileChanges);
                 }
             } catch (Exception e) {

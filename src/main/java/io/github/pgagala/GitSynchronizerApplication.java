@@ -48,9 +48,9 @@ public class GitSynchronizerApplication {
         GitService gitService = appArgs.network().isPresent() ?
             new GitService(appArgs.serverRemote(), gitRepositoryLocal, appArgs.gitBranch(), appArgs.network().get()) :
             new GitService(appArgs.serverRemote(), gitRepositoryLocal, appArgs.gitBranch());
-        RepositoryBootstrap repositoryBootstrap = new RepositoryBootstrap(gitService);
         FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), appArgs.paths());
         FileManager fileManager = new FileManager(gitRepositoryLocal.getValue());
+        RepositoryBootstrap repositoryBootstrap = new RepositoryBootstrap(gitService);
         FileSynchronizer fileSynchronizer = new FileSynchronizer(fileWatcher, gitService, fileManager);
         ExecutorService executorService = Executors.newFixedThreadPool(2,
             new ThreadFactoryBuilder().setNameFormat("git-synchronizer-app-%d").build());

@@ -20,6 +20,7 @@ class FileManager {
 
     FileManager(String targetPath) throws IOException {
         this.targetFilePath = new File(targetPath);
+        //TODO ?
 //        forceDeleteOnExit(targetFilePath);
     }
 
@@ -27,11 +28,25 @@ class FileManager {
         files.forEach(this::delete);
     }
 
+    void deleteFromTargetPath(List<String> fileNames) {
+        fileNames.forEach(this::delete);
+    }
+
     void delete(File file) {
         try {
             FileUtils.forceDelete(file);
         } catch (IOException exc) {
             log.error("Unsuccessful deleting file: {}.", file.getAbsolutePath(), exc);
+        }
+    }
+
+    void delete(String fileName) {
+        File fileToDelete = new File(targetFilePath.getAbsolutePath() + "/" + fileName);
+        try {
+            FileUtils.forceDelete(fileToDelete);
+        } catch (IOException exc) {
+            log.error("Unsuccessful deleting file: {}.", fileToDelete.getAbsolutePath(), exc);
+            throw new IllegalStateException(String.format("Unsuccessful deleting file: %s.", fileToDelete.getAbsolutePath()));
         }
     }
 

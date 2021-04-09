@@ -30,10 +30,34 @@ class FileManagerSpec extends Specification {
             !file.exists()
 
         cleanup:
-            if(file.exists()) {forceDelete(file)}
+            if (file.exists()) {
+                forceDelete(file)
+            }
 
         where:
             file << [dirWithContent(), file()]
+    }
+
+    def "File should be removed from fileManager's target path"() {
+        given: "Existing file in fileManager's target path"
+            def file = Files.createTempFile(
+                    Path.of(fileManagerTargetPath),
+                    "testFile_${RandomStringUtils.randomAlphabetic(4)}",
+                    RandomStringUtils.randomAlphabetic(4))
+                    .toFile()
+            file.createNewFile()
+            assert file.exists()
+
+        when: "File is removed"
+            fileManager.delete(file.name)
+
+        then: "File doesn't exist"
+            !file.exists()
+
+        cleanup:
+            if (file.exists()) {
+                forceDelete(file)
+            }
     }
 
     def "Files should be copied to target path"() {
@@ -68,7 +92,10 @@ class FileManagerSpec extends Specification {
     }
 
     File file() {
-        def file = Files.createTempFile("testFile_${RandomStringUtils.randomAlphabetic(4)}", RandomStringUtils.randomAlphabetic(4)).toFile()
+        def file = Files.createTempFile(
+                "testFile_${RandomStringUtils.randomAlphabetic(4)}",
+                RandomStringUtils.randomAlphabetic(4))
+                .toFile()
         file.createNewFile()
 
         return file

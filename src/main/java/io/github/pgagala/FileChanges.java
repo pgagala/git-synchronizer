@@ -10,8 +10,6 @@ import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.WatchEvent;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -39,22 +37,25 @@ class FileChanges implements Iterable<FileChange> {
         return this.changes.isEmpty();
     }
 
-    List<File> files() {
+    List<File> newOrModifiedFiles() {
         return changes.stream()
-            .filter(FileChange::isFile)
+            .filter(f -> !f.connectedWithRemoval())
+            .map(FileChange::file)
+            .collect(Collectors.toUnmodifiableList());
+    }
+
+    List<File> deletedFiles() {
+        return changes.stream()
+            .filter(FileChange::connectedWithRemoval)
             .map(FileChange::file)
             .collect(Collectors.toUnmodifiableList());
     }
 }
 
 interface FileChange {
-    boolean isFile();
     File file();
-}
-
-class FileChangeUtils {
-    static String eventPath(WatchEvent<?> event, Path path) {
-        return path.toString() + "/" + event.context().toString();
+    default boolean connectedWithRemoval() {
+        return false;
     }
 }
 
@@ -64,14 +65,8 @@ class FileChangeUtils {
 @Accessors(fluent = true)
 class FileModified implements FileChange {
 
-    //TODO exception here should be raised
-    static FileModified of(WatchEvent<?> event, Path path) {
-        String eventPath = FileChangeUtils.eventPath(event, path);
-        return new FileModified(new File(eventPath), eventPath);
-    }
-
     static FileModified of(File file) {
-        return new FileModified(file, file.toPath().toString());
+        return new FileModified(file, file.getName());
     }
 
     @Getter
@@ -80,11 +75,6 @@ class FileModified implements FileChange {
     @Getter
     @EqualsAndHashCode.Include
     String fileName;
-
-    @Override
-    public boolean isFile() {
-        return file.isFile();
-    }
 
     @Override
     public String toString() {
@@ -98,11 +88,6 @@ class FileModified implements FileChange {
 @Accessors(fluent = true)
 class FileCreated implements FileChange {
 
-    static FileCreated of(WatchEvent<?> event, Path path) {
-        String eventPath = FileChangeUtils.eventPath(event, path);
-        return new FileCreated(new File(eventPath), eventPath);
-    }
-
     static FileCreated of(File file) {
         return new FileCreated(file, file.getName());
     }
@@ -113,11 +98,6 @@ class FileCreated implements FileChange {
     @Getter
     @EqualsAndHashCode.Include
     String fileName;
-
-    @Override
-    public boolean isFile() {
-        return file.isFile();
-    }
 
     @Override
     public String toString() {
@@ -131,13 +111,13 @@ class FileCreated implements FileChange {
 @Accessors(fluent = true)
 class FileDeleted implements FileChange {
 
-    static FileDeleted of(WatchEvent<?> event, Path path) {
-        String eventPath = FileChangeUtils.eventPath(event, path);
-        return new FileDeleted(new File(eventPath), eventPath);
-    }
-
     static FileDeleted of(File file) {
         return new FileDeleted(file, file.getName());
+    }
+
+    @Override
+    public boolean connectedWithRemoval() {
+        return true;
     }
 
     @Getter
@@ -146,11 +126,6 @@ class FileDeleted implements FileChange {
     @Getter
     @EqualsAndHashCode.Include
     String fileName;
-
-    @Override
-    public boolean isFile() {
-        return file.isFile();
-    }
 
     @Override
     public String toString() {

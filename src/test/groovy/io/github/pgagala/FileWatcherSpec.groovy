@@ -1,5 +1,6 @@
 package io.github.pgagala
 
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -11,44 +12,29 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY
 
-class FileWatcherSpec extends Specification implements FileWatcherSampleData {
+class FileWatcherSpec extends Specification implements FileChangesSampleData {
 
-    public static final File FILE1 = new File("file1")
-    public static final File FILE2 = new File("file2")
+    @Shared
+    final File FILE1 = file("file1")
+
+    @Shared
+    final File FILE2 = file("file2")
 
     def "On start files from watched paths should be added as created events"() {
         given: "file watcher with paths"
-            File file = Mock(File) {
-                getName() >> FILE1.name
-                getAbsolutePath() >> FILE1.getAbsolutePath()
-                isFile() >> true
-            }
-            File file2 = Mock(File) {
-                getName() >> FILE2.name
-                getAbsolutePath() >> FILE2.getAbsolutePath()
-                isFile() >> true
-            }
-            FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [Mock(Path)], { f -> [file, file2] })
+            FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [Mock(Path)], { f -> [FILE1, FILE2] })
 
         when: "file watcher is started"
             fileWatcher.run()
         then: "files situated under paths should be returned as created file events"
             FileChanges occurredFileChanges = fileWatcher.occurredFileChanges()
-            occurredFileChanges == fileChanges([FileCreated.of(file), FileCreated.of(file2)])
-            occurredFileChanges.files() == [file, file2]
+            occurredFileChanges == fileChanges([FileCreated.of(FILE1), FileCreated.of(FILE2)])
+            occurredFileChanges.newOrModifiedFiles() == [FILE1, FILE2]
     }
 
     def "Exception should be thrown on file watcher start if there are any files in watched paths with same file name"() {
-        given: "file watcher"
-            File file = Mock(File) {
-                listFiles() >> [it]
-                getName() >> FILE1.name
-                getAbsolutePath() >> FILE1.getAbsolutePath()
-                isFile() >> true
-            }
-
         when: "file watcher with duplicated files is created"
-            new FileWatcher(Mock(WatchService), [Mock(Path)], { f -> [file, file] })
+            new FileWatcher(Mock(WatchService), [Mock(Path)], { f -> [FILE1, FILE1] })
         then: "exception should be thrown"
             thrown DuplicatedWatchedFileException
     }
@@ -61,14 +47,11 @@ class FileWatcherSpec extends Specification implements FileWatcherSampleData {
             WatchService watchService = Mock(WatchService) {
                 take() >> key
             }
-            File file = Mock(File) {
-                listFiles() >> []
-            }
             def watchedPaths = [Mock(Path) {
                 toString() >> "/"
                 register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
             }]
-            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [file] })
+            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [] })
 
         when: "File watcher is started"
             fileWatcher.run()
@@ -104,5 +87,15 @@ class FileWatcherSpec extends Specification implements FileWatcherSampleData {
             fileChanges([fileModified(FILE1)])                     | fileChanges([fileCreated(FILE1)])                      || false
             fileChanges([fileModified(FILE1)])                     | fileChanges([fileModified(FILE1), fileCreated(FILE1)]) || false
             fileChanges([fileModified(FILE1), fileCreated(FILE1)]) | fileChanges([fileModified(FILE1)])                     || false
+    }
+
+    def file(String name, String path = "/", boolean exists = true) {
+        return Mock(File) {
+            isFile() >> exists
+            exists() >> exists
+            getName() >> name
+            toPath() >> Path.of(path, name)
+            getAbsolutePath() >> "$path$name"
+        }
     }
 }

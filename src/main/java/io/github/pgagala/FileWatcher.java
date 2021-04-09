@@ -3,6 +3,8 @@ package io.github.pgagala;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
+import lombok.experimental.Accessors;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -22,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,8 +36,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Slf4j
 class FileWatcher {
-    //TODO integration to test changes from different places
-    Map<String, BiFunction<WatchEvent<?>, Path, FileChange>> eventNameToFileChangeCreatorMapping = Map.of(
+    Map<String, Function<File, FileChange>> eventNameToFileChangeCreatorMapping = Map.of(
         ENTRY_CREATE.name(), FileCreated::of,
         ENTRY_MODIFY.name(), FileModified::of,
         ENTRY_DELETE.name(), FileDeleted::of);
@@ -55,7 +55,7 @@ class FileWatcher {
     }
 
     public FileWatcher(WatchService watchService, List<Path> paths) throws IOException {
-        this(watchService, paths, f -> FileUtils.listFiles(f, null, true));
+        this(watchService, paths, f -> FileUtils.listFiles(f, null, false));
     }
 
     private void subscribePathsToWatcherService(List<Path> paths) throws IOException {
@@ -72,7 +72,7 @@ class FileWatcher {
             .forEach(f -> {
                     FileCreated fileCreated = FileCreated.of(f);
                     if (fileChanges.contains(fileCreated)) {
-                        log.error("There is already a synchronized file with same name as: " + fileCreated);
+                        log.error("There is already a synchronized file with same name as: " + fileCreated.fileName());
                         throw new DuplicatedWatchedFileException("There is already a synchronized file with same name as: " + fileCreated);
                     }
                     fileChanges.add(fileCreated);
@@ -123,7 +123,14 @@ class FileWatcher {
                     }
                 }
             )
-            .map(event -> eventNameToFileChangeCreatorMapping.get(event.kind().name()).apply(event, path))
+            .map(event -> event(event, path))
+            .filter(event -> {
+                File f = new File(event.path);
+                return f.isFile() || !f.exists();
+            })
+            .map(
+                event ->
+                    eventNameToFileChangeCreatorMapping.get(event.kind()).apply(new File(event.path)))
             .collect(Collectors.toUnmodifiableList());
     }
 
@@ -141,5 +148,16 @@ class FileWatcher {
                     uniqueFileChanges.addAll(fileChangesToAdd);
                     return uniqueFileChanges;
                 });
+    }
+
+    @Value
+    @Accessors(fluent = true)
+    private class Event {
+        String kind;
+        String path;
+    }
+
+    private Event event(WatchEvent<?> event, Path path) {
+        return new Event(event.kind().name(), path.toString() + "/" + event.context().toString());
     }
 }

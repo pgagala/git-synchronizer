@@ -2,25 +2,24 @@ package io.github.pgagala
 
 import sun.nio.fs.AbstractWatchKey
 
-import java.nio.file.Path
 import java.nio.file.StandardWatchEventKinds
 
-trait FileWatcherSampleData {
+trait FileChangesSampleData {
 
     FileChanges fileChanges(List<FileChange> fileChanges) {
         return new FileChanges(fileChanges)
     }
 
     FileModified fileModified(File file) {
-         return FileModified.of(eventModify(file), Path.of("/"))
+         return FileModified.of(file)
     }
 
     FileCreated fileCreated(File file) {
-        return FileCreated.of(eventCreate(file), Path.of("/"))
+        return FileCreated.of(file)
     }
 
     FileDeleted fileDeleted(File file) {
-        return FileDeleted.of(eventDelete(file), Path.of("/"))
+        return FileDeleted.of(file)
     }
 
     def eventModify(File file) {
@@ -34,5 +33,4 @@ trait FileWatcherSampleData {
     def eventDelete(File file) {
         return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_DELETE, file.name)
     }
-
 }
