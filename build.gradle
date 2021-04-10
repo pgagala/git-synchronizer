@@ -50,9 +50,8 @@ lombok {
     config['lombok.nonNull.exceptionType'] = 'IllegalArgumentException'
 }
 
-
 jar {
     manifest {
-        attributes 'Main-Class': 'io.github.pgagala.GitSynchronizerApplication'
+        attributes 'Main-Class': 'io.github.pgagala.gitsynchronizer.GitSynchronizerApplication'
     }
 }
