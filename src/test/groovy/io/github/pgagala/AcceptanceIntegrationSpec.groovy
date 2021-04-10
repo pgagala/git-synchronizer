@@ -1,6 +1,7 @@
 package io.github.pgagala
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import io.github.pgagala.util.TestGitService
 import org.apache.commons.io.FileUtils
 import spock.lang.Timeout
 import spock.util.concurrent.PollingConditions
@@ -17,10 +18,12 @@ import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtil
 
 @Timeout(value = 2222, unit = TimeUnit.MINUTES)
 @SuppressWarnings(["GroovyAccessibility", "GroovyAssignabilityCheck"])
-//@Ignore
 class AcceptanceIntegrationSpec extends IntegrationSpec {
 
     public static final GitServerRemote GIT_REMOTE = new GitServerRemote("http://$gitServerIp/test_repository.git")
+    public static final String BAR = "bar"
+    public static final String FOO = "foo"
+    public static final String BLA = "bla"
 
     File testFolder
     File folder1
@@ -42,6 +45,8 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
     File anotherSynchronizedRepoFolder
     File anotherSynchronizedRepoFolder2
 
+    TestGitService testGitService
+
     @SuppressWarnings('unused')
     def setup() {
         def testFolderName = "test_folder_" + randomAlphabetic(4)
@@ -61,7 +66,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         folder2FolderFile3 = new File("$testFolder.path/folder2/folder/file2.3").with(true) { it.createNewFile() }
 
         folderWithDuplicates = new File("$testFolder.path/folderWithDuplicates").with(true) { it.mkdir() }
-        folderWithDuplicatesFile = new File("$testFolder.path/folderWithDuplicates/file1.1").with(true) { it.mkdir() }
+        folderWithDuplicatesFile = new File("$testFolder.path/folderWithDuplicates/file1.1").with(true) { it.createNewFile() }
 
         def synchronizedRepoFolderName = "test_repo_${randomAlphabetic(4)}"
         synchronizedRepoFolder = new File("${Path.of(GetPropertyAction.privilegedGetProperty("java.io.tmpdir"))}/$synchronizedRepoFolderName")
@@ -70,6 +75,8 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         def clonedTestRepoFolderName2 = "another_test_repo2_${randomAlphabetic(4)}"
         anotherSynchronizedRepoFolder = Files.createTempDirectory(clonedTestRepoFolderName).toFile()
         anotherSynchronizedRepoFolder2 = Files.createTempDirectory(clonedTestRepoFolderName2).toFile()
+
+        testGitService = new TestGitService(new GitRepositoryLocal(synchronizedRepoFolder), gitServerNetwork)
     }
 
     @SuppressWarnings('unused')
@@ -112,23 +119,23 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
             new PollingConditions(timeout: 15).eventually {
                 appStarted.isDone() && !appStarted.isCompletedExceptionally()
             }
-        and: "all files are copied to local synchronized repository folder"
+        and: "all files from watched folders are copied to local synchronized repository folder"
             new PollingConditions(timeout: 15).eventually {
                 assert filesAmount(synchronizedRepoFolder, "\\.git") == 6
             }
 
         when: "folder1File is edited"
-            folder1File.append("bla")
+            folder1File.append(BLA)
         then: "changed file is copied to synchronized repository"
             new PollingConditions(timeout: 15).eventually {
-                new File("$synchronizedRepoFolder/$folder1File.name").text.endsWith("bla")
+                new File("$synchronizedRepoFolder/$folder1File.name").text.endsWith(BLA)
             }
 
         when: "folder1FolderFile2 is edited"
-            folder1FolderFile2.append("foo")
+            folder1FolderFile2.append(FOO)
         then: "changed file is copied to synchronized repository"
             new PollingConditions(timeout: 15).eventually {
-                new File("$synchronizedRepoFolder/$folder1FolderFile2.name").text.endsWith("foo")
+                new File("$synchronizedRepoFolder/$folder1FolderFile2.name").text.endsWith(FOO)
             }
 
         when: "folder1FolderFile2 is removed"
@@ -146,17 +153,19 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
             }
 
         when: "folder2File is edited"
-            folder2File.append("bar")
+            folder2File.append(BAR)
         then: "changed file is copied to synchronized repository"
             new PollingConditions(timeout: 15).eventually {
-                new File("$synchronizedRepoFolder/$folder2File.name").text.endsWith("bar")
+                new File("$synchronizedRepoFolder/$folder2File.name").text.endsWith(BAR)
             }
 
         when: "folder2FolderFile3 is removed"
             folder2FolderFile3.delete()
-        then: "file is deleted from synchronized repository"
+        then: "file is deleted from synchronized repository. Last change is visible in git log"
             new PollingConditions(timeout: 15).eventually {
-                !new File("$synchronizedRepoFolder/$folder2FolderFile3.name").exists()
+                !new File("$synchronizedRepoFolder/$folder2FolderFile3.name").exists() &&
+                        testGitService.log().result()
+                                .contains("File deleted: $folder2FolderFile3")
             }
 
         when: "app is started with another synchronized repository"
@@ -177,25 +186,34 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
                 appStarted2.isDone() && !appStarted2.isCompletedExceptionally()
             }
         and: "another synchronized repository should has same files as synchronized repository"
-        //TODO add check in more details files
-            assert filesAmount(anotherSynchronizedRepoFolder, "\\.git") == 5
+            filesAmount(anotherSynchronizedRepoFolder, "\\.git") == 5
+            new File("$anotherSynchronizedRepoFolder/$folder1File.name").text.endsWith(BLA)
+            new File("$anotherSynchronizedRepoFolder/$folder1FolderFile3.name").exists()
+            new File("$anotherSynchronizedRepoFolder/$folder1FolderFile4.name").exists()
+            new File("$anotherSynchronizedRepoFolder/$folder2File.name").text.endsWith(BAR)
+            new File("$anotherSynchronizedRepoFolder/$folder2FolderFile2.name").exists()
 
-//        when: "app is started watching paths which contains files with duplicated filename"
-//            CompletableFuture<Boolean> appStarted3 = new CompletableFuture<>()
-//            executor.submit(() -> {
-//                GitSynchronizerApplication.main(
-//                        "-p", "$folder1.path,$folderWithDuplicates.path",
-//                        "-g", GIT_REMOTE.value,
-//                        "-b", newBranch.value,
-//                        "-r", anotherSynchronizedRepoFolder2.getAbsolutePath(),
-//                        "-n", gitServerNetwork)
-//                appStarted3.complete(true)
-//                return appStarted3
-//            })
-//        then: "app shouldn't start"
-//            new PollingConditions(timeout: 15).eventually {
-//                appStarted3.isCompletedExceptionally()
-//            }
+        when: "app is started watching paths which contains files with duplicated filename"
+            CompletableFuture<Boolean> appStarted3 = new CompletableFuture<>()
+            executor.submit(() -> {
+                try {
+                    GitSynchronizerApplication.main(
+                            "-p", "$folder1.path,$folderWithDuplicates.path",
+                            "-g", GIT_REMOTE.value,
+                            "-b", newBranch.value,
+                            "-r", anotherSynchronizedRepoFolder2.getAbsolutePath(),
+                            "-n", gitServerNetwork)
+                    appStarted3.complete(true)
+                }
+                catch (Throwable t) {
+                    appStarted3.completeExceptionally(t)
+                }
+                return appStarted3
+            })
+        then: "app shouldn't start"
+            new PollingConditions(timeout: 15).eventually {
+                appStarted3.isCompletedExceptionally()
+            }
     }
 
     static def filesAmount(File file, String excludedPattern = null) {

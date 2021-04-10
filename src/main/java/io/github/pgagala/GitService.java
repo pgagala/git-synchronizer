@@ -119,6 +119,10 @@ class GitService {
         List<String> addCommand = getDockerGitCommandForLocalExecution(of("add", "."));
         Response addingResp = processExecutor.execute(addCommand, "git adding file");
 
+        if(lackOfNewChangesInRepository()) {
+            return Response.success("No new files changes to commit. File changes are same as already existing in local repository");
+        }
+
         //TODO credentials to configure
         List<String> commitCommand = getDockerGitCommandForLocalExecution(of("-c", "user.name='haker bonzo'", "-c", "user.email=hakier@bonzo.pl",
             "commit", "-m",
@@ -129,6 +133,12 @@ class GitService {
         Response pushingResp = processExecutor.execute(pushingToOriginCommand, "git pushing to origin");
 
         return Response.of(addingResp, committingResp, pushingResp);
+    }
+
+    private boolean lackOfNewChangesInRepository() throws InterruptedException {
+        List<String> statusCommand = getDockerGitCommandForLocalExecution(of("status"));
+        return processExecutor.execute(statusCommand,"git status").result()
+            .contains("nothing");
     }
 
     private String getCommitMessage(FileChanges fileChanges) {

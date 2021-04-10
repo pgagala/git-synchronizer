@@ -95,6 +95,32 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             assertGitLogContains(file, "deleted", newBranch)
     }
 
+    def "Commit should be successful if there are no changes in repository at all"() {
+        given: "Initialized git service for a random path and branch"
+            def newBranch = new GitBranch("branch_${randomAlphabetic(4)}")
+            GitService gitService = new GitService(GIT_REMOTE, new GitRepositoryLocal(testFolder), newBranch, gitServerNetwork)
+            gitService.createRepository()
+
+        when: "File is committed to repository"
+            def response = gitService.commitChanges(new FileChanges([]))
+        then: "commit is successful"
+            response.isSuccessful()
+
+        when: "New file is copied to repository"
+            def fileName = "/file-" + randomAlphabetic(5)
+            File file = new File(testFolder.getPath() + fileName)
+            assert !file.exists()
+            file.createNewFile()
+            response = gitService.commitChanges(new FileChanges([FileCreated.of(file)]))
+        then: "commit is successful"
+            response.isSuccessful()
+
+        when: "Same file is committed"
+            response = gitService.commitChanges(new FileChanges([FileCreated.of(file)]))
+        then: "commit is successful"
+            response.isSuccessful()
+    }
+
     private boolean assertGitLogContains(File file, String logEvent, GitBranch branch = GitBranch.DEFAULT_BRANCH) {
         processExecutor.execute(["cat", "${testFolder.getAbsolutePath()}/.git/logs/refs/heads/$branch.value".toString()], "cat file")
                 .result()

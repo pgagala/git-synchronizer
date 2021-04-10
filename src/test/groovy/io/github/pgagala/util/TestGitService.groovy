@@ -27,6 +27,12 @@ class TestGitService {
         return new ProcessExecutor(location).execute(cmd, "git pull")
     }
 
+    Response log(File location = executionLocation.value) throws InterruptedException {
+        def cmd = dockerGitPrefix(location) +
+                ["log"]
+        return new ProcessExecutor(location).execute(cmd, "git log")
+    }
+
     def dockerGitPrefix(File location) {
         [
                 "docker",
