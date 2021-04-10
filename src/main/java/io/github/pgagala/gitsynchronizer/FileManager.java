@@ -1,4 +1,4 @@
-package io.github.pgagala;
+package io.github.pgagala.gitsynchronizer;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

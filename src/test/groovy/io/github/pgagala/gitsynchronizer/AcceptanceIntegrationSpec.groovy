@@ -1,7 +1,6 @@
-package io.github.pgagala
+package io.github.pgagala.gitsynchronizer
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import io.github.pgagala.util.TestGitService
 import org.apache.commons.io.FileUtils
 import spock.lang.Timeout
 import spock.util.concurrent.PollingConditions
@@ -45,7 +44,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
     File anotherSynchronizedRepoFolder
     File anotherSynchronizedRepoFolder2
 
-    TestGitService testGitService
+    io.github.pgagala.gitsynchronizer.util.TestGitService testGitService
 
     @SuppressWarnings('unused')
     def setup() {
@@ -76,7 +75,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         anotherSynchronizedRepoFolder = Files.createTempDirectory(clonedTestRepoFolderName).toFile()
         anotherSynchronizedRepoFolder2 = Files.createTempDirectory(clonedTestRepoFolderName2).toFile()
 
-        testGitService = new TestGitService(new GitRepositoryLocal(synchronizedRepoFolder), gitServerNetwork)
+        testGitService = new io.github.pgagala.gitsynchronizer.util.TestGitService(new GitRepositoryLocal(synchronizedRepoFolder), gitServerNetwork)
     }
 
     @SuppressWarnings('unused')

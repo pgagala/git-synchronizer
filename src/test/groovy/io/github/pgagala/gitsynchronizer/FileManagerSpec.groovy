@@ -1,4 +1,4 @@
-package io.github.pgagala
+package io.github.pgagala.gitsynchronizer
 
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils
 import spock.lang.Specification

@@ -1,4 +1,4 @@
-package io.github.pgagala.util
+package io.github.pgagala.gitsynchronizer.util
 
 
 class SpockMockitoVerifier {

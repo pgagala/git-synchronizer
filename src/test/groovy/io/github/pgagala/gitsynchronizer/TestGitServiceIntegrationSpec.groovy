@@ -1,7 +1,6 @@
-package io.github.pgagala
+package io.github.pgagala.gitsynchronizer
 
-
-import io.github.pgagala.util.TestGitService
+import io.github.pgagala.gitsynchronizer.processexecutor.ProcessExecutor
 import org.apache.commons.io.FileUtils
 import spock.lang.Timeout
 
@@ -19,7 +18,7 @@ class TestGitServiceIntegrationSpec extends IntegrationSpec {
 
     GitRepositoryLocal gitLocal
     GitRepositoryLocal clonedLocalGit
-    TestGitService testGitService
+    io.github.pgagala.gitsynchronizer.util.TestGitService testGitService
     FileManager fileManager
     ProcessExecutor processExecutor
 
@@ -29,7 +28,7 @@ class TestGitServiceIntegrationSpec extends IntegrationSpec {
 
         gitLocal = new GitRepositoryLocal(Files.createTempDirectory(testRepoFolderName).toFile())
         clonedLocalGit = new GitRepositoryLocal(Files.createTempDirectory(clonedTestRepoFolderName).toFile())
-        testGitService = new TestGitService(gitLocal, gitServerNetwork)
+        testGitService = new io.github.pgagala.gitsynchronizer.util.TestGitService(gitLocal, gitServerNetwork)
 
         fileManager = new FileManager(testRepoFolderName)
         processExecutor = new ProcessExecutor(gitLocal.value)

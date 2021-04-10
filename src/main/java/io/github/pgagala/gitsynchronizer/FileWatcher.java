@@ -1,4 +1,4 @@
-package io.github.pgagala;
+package io.github.pgagala.gitsynchronizer;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.AccessLevel;
@@ -152,7 +152,7 @@ class FileWatcher {
 
     @Value
     @Accessors(fluent = true)
-    private class Event {
+    private static class Event {
         String kind;
         String path;
     }

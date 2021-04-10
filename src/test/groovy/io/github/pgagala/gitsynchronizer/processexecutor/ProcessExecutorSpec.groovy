@@ -1,4 +1,5 @@
-package io.github.pgagala
+package io.github.pgagala.gitsynchronizer.processexecutor
+
 
 import org.apache.commons.io.FileUtils
 import spock.lang.Specification

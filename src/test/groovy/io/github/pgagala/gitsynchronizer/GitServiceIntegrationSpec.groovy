@@ -1,6 +1,6 @@
-package io.github.pgagala
+package io.github.pgagala.gitsynchronizer
 
-
+import io.github.pgagala.gitsynchronizer.processexecutor.ProcessExecutor
 import org.apache.commons.io.FileUtils
 import spock.lang.Timeout
 

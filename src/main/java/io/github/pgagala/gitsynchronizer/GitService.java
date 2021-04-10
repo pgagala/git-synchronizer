@@ -1,5 +1,7 @@
-package io.github.pgagala;
+package io.github.pgagala.gitsynchronizer;
 
+import io.github.pgagala.gitsynchronizer.processexecutor.ProcessExecutor;
+import io.github.pgagala.gitsynchronizer.processexecutor.Response;
 import lombok.AccessLevel;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;

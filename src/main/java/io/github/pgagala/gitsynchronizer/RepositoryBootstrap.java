@@ -1,5 +1,6 @@
-package io.github.pgagala;
+package io.github.pgagala.gitsynchronizer;
 
+import io.github.pgagala.gitsynchronizer.processexecutor.Response;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -12,6 +13,7 @@ class RepositoryBootstrap {
 
     GitService gitService;
 
+    //TODO add spec if on initialization cannot remove repo then excp should be raised
     void initialize() throws InterruptedException, IOException {
         deleteRepository();
         gitService.createRepository();

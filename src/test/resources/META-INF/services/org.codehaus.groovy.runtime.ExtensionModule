@@ -1,3 +1,3 @@
 moduleName=File extension module
 moduleVersion=1.0
-extensionClasses=io.github.pgagala.util.FileExtension
+extensionClasses=io.github.pgagala.gitsynchronizer.util.FileExtension

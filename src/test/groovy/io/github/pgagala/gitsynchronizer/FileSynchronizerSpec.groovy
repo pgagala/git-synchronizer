@@ -1,13 +1,12 @@
-package io.github.pgagala
+package io.github.pgagala.gitsynchronizer
 
 
+import io.github.pgagala.gitsynchronizer.util.SpockMockitoVerifier
 import org.mockito.Mockito
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.nio.file.Path
-
-import static io.github.pgagala.util.SpockMockitoVerifier.toSpockVerification
 
 class FileSynchronizerSpec extends Specification implements FileChangesSampleData {
 
@@ -27,11 +26,11 @@ class FileSynchronizerSpec extends Specification implements FileChangesSampleDat
             fileSynchronizer.run()
         then: "new files should be copied to synchronized folder"
             new PollingConditions(timeout: 2).eventually {
-                toSpockVerification(Mockito.verify(fileManager).copy(filesChanges.collect {it.file()}))
+                SpockMockitoVerifier.toSpockVerification(Mockito.verify(fileManager).copy(filesChanges.collect {it.file()}))
             }
         and: "committed to git repository"
             new PollingConditions(timeout: 2).eventually {
-                toSpockVerification(Mockito.verify(gitService).commitChanges(filesChanges))
+                SpockMockitoVerifier.toSpockVerification(Mockito.verify(gitService).commitChanges(filesChanges))
             }
 
         where:
@@ -58,15 +57,15 @@ class FileSynchronizerSpec extends Specification implements FileChangesSampleDat
             fileSynchronizer.run()
         then: "new file should be copied to synchronized folder"
             new PollingConditions(timeout: 2).eventually {
-                toSpockVerification(Mockito.verify(fileManager).copy(filesChanges.newOrModifiedFiles()))
+                SpockMockitoVerifier.toSpockVerification(Mockito.verify(fileManager).copy(filesChanges.newOrModifiedFiles()))
             }
         and: "new file should be deleted from synchronized folder"
             new PollingConditions(timeout: 2).eventually {
-                toSpockVerification(Mockito.verify(fileManager).deleteFromTargetPath(filesChanges.deletedFiles().collect {it.name}))
+                SpockMockitoVerifier.toSpockVerification(Mockito.verify(fileManager).deleteFromTargetPath(filesChanges.deletedFiles().collect {it.name}))
             }
         and: "committed to git repository"
             new PollingConditions(timeout: 2).eventually {
-                toSpockVerification(Mockito.verify(gitService).commitChanges(filesChanges))
+                SpockMockitoVerifier.toSpockVerification(Mockito.verify(gitService).commitChanges(filesChanges))
             }
     }
 

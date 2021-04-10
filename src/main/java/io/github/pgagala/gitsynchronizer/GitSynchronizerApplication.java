@@ -1,4 +1,4 @@
-package io.github.pgagala;
+package io.github.pgagala.gitsynchronizer;
 
 import com.beust.jcommander.IParameterValidator;
 import com.beust.jcommander.IStringConverter;
@@ -67,6 +67,7 @@ public class GitSynchronizerApplication {
         Runtime.getRuntime().addShutdownHook(new Thread(repositoryBootstrap::cleanup));
     }
 
+    //TODO not print git server network if absent ?
     private static void printStartMsg(GitSynchronizerApplicationArgsParser appArgs) throws IOException {
         String startMsg =
             String.format("""

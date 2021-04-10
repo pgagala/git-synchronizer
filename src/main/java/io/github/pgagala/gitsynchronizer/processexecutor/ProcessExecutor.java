@@ -1,4 +1,4 @@
-package io.github.pgagala;
+package io.github.pgagala.gitsynchronizer.processexecutor;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -24,13 +24,13 @@ public class ProcessExecutor {
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
     File executionLocation;
 
-    Response execute(List<String> commands, String description) throws InterruptedException {
+    public Response execute(List<String> commands, String description) throws InterruptedException {
         return executeProcess(description, new ProcessBuilder()
             .directory(executionLocation)
             .command(commands));
     }
 
-    Response execute(List<String> commands, String description, Duration timeout) throws InterruptedException {
+    public Response execute(List<String> commands, String description, Duration timeout) throws InterruptedException {
         return executeProcess(description, new ProcessBuilder()
             .directory(executionLocation)
             .command(commands),

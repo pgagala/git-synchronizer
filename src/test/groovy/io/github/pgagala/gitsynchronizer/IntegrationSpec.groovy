@@ -1,4 +1,4 @@
-package io.github.pgagala
+package io.github.pgagala.gitsynchronizer
 
 import org.testcontainers.containers.DockerComposeContainer
 import org.testcontainers.containers.wait.strategy.Wait

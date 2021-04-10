@@ -1,6 +1,7 @@
-package io.github.pgagala
+package io.github.pgagala.gitsynchronizer
 
 import com.beust.jcommander.ParameterException
+import io.github.pgagala.gitsynchronizer.GitSynchronizerApplication
 import spock.lang.Specification
 
 import java.nio.file.Path

@@ -1,4 +1,4 @@
-package io.github.pgagala;
+package io.github.pgagala.gitsynchronizer;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.AccessLevel;
