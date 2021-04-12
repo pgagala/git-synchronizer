@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -44,13 +45,15 @@ class FileWatcher {
     ExecutorService executorService;
     WatchService watchService;
     Function<File, Collection<File>> filesFetcher;
-    Map<WatchKey, Path> watchKeysPathMap;
+    Map<WatchKey, Path> watchKeyWatchedFolderMap;
+    Map<WatchKey, List<File>> watchKeyWatchedFileMap;
 
     public FileWatcher(WatchService watchService, List<Path> paths, Function<File, Collection<File>> filesFetcher) throws IOException {
         this.watchService = watchService;
         executorService = Executors.newFixedThreadPool(paths.size(), new ThreadFactoryBuilder().setNameFormat("file-watcher-thread-%d").build());
         this.filesFetcher = filesFetcher;
-        this.watchKeysPathMap = new HashMap<>();
+        this.watchKeyWatchedFolderMap = new HashMap<>();
+        this.watchKeyWatchedFileMap = new HashMap<>();
         subscribePathsToWatcherService(Collections.unmodifiableList(paths));
     }
 
@@ -60,24 +63,41 @@ class FileWatcher {
 
     private void subscribePathsToWatcherService(List<Path> paths) throws IOException {
         for (Path path : paths) {
-            watchKeysPathMap.put(path.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE), path);
-            addFilesToInitialFileCreatedEvents(path);
+            if (path.toFile().isFile()) {
+                subscribeSingleFile(path);
+                addFileToInitialFileCreatedEvents(path.toFile());
+            } else {
+                watchKeyWatchedFolderMap.put(path.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE), path);
+                addFilesToInitialFileCreatedEvents(path);
+            }
         }
+    }
+
+    private void subscribeSingleFile(Path path) throws IOException {
+        Path parentPathOfFile = path.toFile().getParentFile().toPath();
+        WatchKey watchKey = parentPathOfFile.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
+        watchKeyWatchedFileMap.merge(watchKey, List.of(path.toFile()), (l1, l2) -> {
+            List<File> files = new ArrayList<>();
+            files.addAll(l1);
+            files.addAll(l2);
+            return Collections.unmodifiableList(files);
+        });
     }
 
     private void addFilesToInitialFileCreatedEvents(Path path) {
         filesFetcher.apply(path.toFile())
             .stream()
             .filter(File::isFile)
-            .forEach(f -> {
-                    FileCreated fileCreated = FileCreated.of(f);
-                    if (fileChanges.contains(fileCreated)) {
-                        log.error("There is already a synchronized file with same name as: " + fileCreated.fileName());
-                        throw new DuplicatedWatchedFileException("There is already a synchronized file with same name as: " + fileCreated);
-                    }
-                    fileChanges.add(fileCreated);
-                }
-            );
+            .forEach(this::addFileToInitialFileCreatedEvents);
+    }
+
+    private void addFileToInitialFileCreatedEvents(File file) {
+        FileCreated fileCreated = FileCreated.of(file);
+        if (fileChanges.contains(fileCreated)) {
+            log.error("There is already a synchronized file with same name as: " + fileCreated.fileName());
+            throw new DuplicatedWatchedFileException("There is already a synchronized file with same name as: " + fileCreated);
+        }
+        fileChanges.add(fileCreated);
     }
 
     void run() {
@@ -90,20 +110,55 @@ class FileWatcher {
                     if (watchEvents == null) {
                         continue;
                     }
-                    fileChanges.addAll(toFileChanges(watchEvents, watchKeysPathMap.get(key)));
+                    if (watchKeyWatchedFileMap.containsKey(key)) {
+                        addToFileChangesForWatchedSingleFile(key, watchEvents);
+                    }
+                    if (watchKeyWatchedFolderMap.containsKey(key)) {
+                        fileChanges.addAll(toFileChanges(watchEvents, watchKeyWatchedFolderMap.get(key)));
+                    }
                     poll = key.reset();
                 }
-                //TODO if throwing that here will be shown in 102 ?
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error(format("Interrupted exception during watching paths: %s for file events. %n Exception: %s", watchKeysPathMap.values(), e));
-                throw new IllegalStateException(e.getMessage(), e);
             } catch (Exception e) {
                 Thread.currentThread().interrupt();
-                log.error(format("Exception during watching paths: %s for file events. %n Exception: %s", watchKeysPathMap.values(), e));
-                throw e;
+                log.error(format("Exception during watching paths: %s, watching files: %s for file events. %n Exception: %s",
+                    watchKeyWatchedFolderMap.values(),
+                    watchKeyWatchedFileMap.values(), e));
+                throw new IllegalStateException(e);
             }
         });
+    }
+
+    private void addToFileChangesForWatchedSingleFile(WatchKey key, List<WatchEvent<?>> watchEvents) {
+        Supplier<String> correspondingSingleFileErrorMsg = () -> format(
+            """
+                Cannot find corresponding single file watched for: 
+                watchKeyWatchedFileMap: %s,
+                watchEvents: %s
+                """, watchKeyWatchedFileMap, toHumanReadable(watchEvents));
+        File correspondingFile = watchKeyWatchedFileMap.get(key)
+            .stream()
+            .filter(f -> watchEvents.stream().anyMatch(e -> e.context().toString().equals(f.getName())))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException(correspondingSingleFileErrorMsg.get()));
+
+        Supplier<String> correspondingSingleEventErrorMsg = () -> format(
+            """
+                Cannot find corresponding single event for:
+                corresponding file: %s,
+                watchEvents: %s
+                """, correspondingFile, toHumanReadable(watchEvents));
+        WatchEvent<?> correspondingEvent = watchEvents.stream()
+            .filter(e -> e.context().toString().equals(correspondingFile.getName()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException(correspondingSingleEventErrorMsg.get()));
+
+        fileChanges.add(eventNameToFileChangeCreatorMapping.get(correspondingEvent.kind().name()).apply(correspondingFile));
+    }
+
+    private List<String> toHumanReadable(List<WatchEvent<?>> watchEvents) {
+        return watchEvents.stream()
+            .map(e -> "type: " + e.kind().name() + ", name: " + e.context().toString())
+            .collect(Collectors.toUnmodifiableList());
     }
 
     FileChanges occurredFileChanges() {

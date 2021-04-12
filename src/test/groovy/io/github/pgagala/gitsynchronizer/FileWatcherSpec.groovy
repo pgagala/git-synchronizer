@@ -8,6 +8,7 @@ import spock.util.concurrent.PollingConditions
 import java.nio.file.Path
 import java.nio.file.WatchKey
 import java.nio.file.WatchService
+import java.util.function.Function
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE
@@ -23,7 +24,14 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
 
     def "On start files from watched paths should be added as created events"() {
         given: "file watcher with paths"
-            FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [Mock(Path)], { f -> [FILE1, FILE2] })
+            FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [
+                    Mock(Path) {
+                        toFile() >> Mock(File) {
+                            isFile() >> false
+                        }
+                        toString() >> "/"
+                    }
+            ], { f -> [FILE1, FILE2] })
 
         when: "file watcher is started"
             fileWatcher.run()
@@ -35,12 +43,16 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
 
     def "Exception should be thrown on file watcher start if there are any files in watched paths with same file name"() {
         when: "file watcher with duplicated files is created"
-            new FileWatcher(Mock(WatchService), [Mock(Path)], { f -> [FILE1, FILE1] })
+            new FileWatcher(Mock(WatchService), [Mock(Path) {
+                toFile() >> Mock(File) {
+                    isFile() >> false
+                }
+            }], { f -> [FILE1, FILE1] })
         then: "exception should be thrown"
             thrown DuplicatedWatchedFileException
     }
 
-    def "occurredEvents should returned events without duplication"() {
+    def "occurredFileChanges should returned events without duplication"() {
         given: "Watch service which returned particular events"
             WatchKey key = Mock(WatchKey) {
                 pollEvents() >> events
@@ -48,10 +60,14 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
             WatchService watchService = Mock(WatchService) {
                 take() >> key
             }
-            def watchedPaths = [Mock(Path) {
-                toString() >> "/"
-                register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
-            }]
+            def watchedPaths =
+                    [Mock(Path) {
+                        toString() >> "/"
+                        register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
+                        toFile() >> Mock(File) {
+                            isFile() >> false
+                        }
+                    }]
             FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [] })
 
         when: "File watcher is started"
@@ -72,6 +88,59 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
             [eventCreate(FILE1), eventDelete(FILE2), eventModify(FILE1), eventCreate(FILE1)] | fileChanges([fileCreated(FILE1), fileDeleted(FILE2), fileModified(FILE1)])
     }
 
+    def "watching single file should be possible"() {
+        given: "Watch service which returned particular events"
+            WatchKey key = Mock(WatchKey) {
+                pollEvents() >> [eventCreate(FILE1), eventCreate(FILE2), eventCreate(new File("file3"))]
+            }
+            def parentFile = registrableFile(key)
+            def file1 = file("file1", parentFile)
+            def file2 = file("file2", parentFile)
+            WatchService watchService = Mock(WatchService) {
+                take() >> key
+            }
+
+        when: "Path pinpoint on file 1"
+            def watchedPaths = [Mock(Path) {
+                toString() >> file1.absolutePath
+                register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
+                toFile() >> file1
+            }]
+            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [file1] })
+
+        and: "File watcher is started"
+            fileWatcher.run()
+
+        then: "Single file change is returned"
+            new PollingConditions(timeout: 2).eventually {
+                assert fileWatcher.occurredFileChanges() == fileChanges([fileCreated(file1)])
+            }
+
+        when: "Path pinpoint on file 1, file2"
+            watchedPaths = [Mock(Path) {
+                toString() >> file1.absolutePath
+                register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
+                toFile() >> file1
+            },
+            Mock(Path) {
+                toString() >> file2.absolutePath
+                register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
+                toFile() >> file2
+            }]
+            def filesFetcher = Mock(Function<File, Collection<File>>) {
+                apply(_ as File) >>> [[file1], [file2], []]
+            }
+            fileWatcher = new FileWatcher(watchService, watchedPaths, filesFetcher)
+
+        and: "File watcher is started"
+            fileWatcher.run()
+
+        then: "Single file change is returned"
+            new PollingConditions(timeout: 2).eventually {
+                assert fileWatcher.occurredFileChanges() == fileChanges([fileCreated(file1), fileCreated(file2)])
+            }
+    }
+
     def "equal of file changes should work correctly"() {
         expect:
             (expectedFileChanges == fileChangesToCheck) == result
@@ -90,13 +159,22 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
             fileChanges([fileModified(FILE1), fileCreated(FILE1)]) | fileChanges([fileModified(FILE1)])                     || false
     }
 
-    def file(String name, String path = "/", boolean exists = true) {
+    def file(String name, File parentFile = new File(""), String path = "/$name", boolean exists = true) {
         return Mock(File) {
             isFile() >> exists
             exists() >> exists
             getName() >> name
-            toPath() >> Path.of(path, name)
-            getAbsolutePath() >> "$path$name"
+            getParentFile() >> parentFile
+            toPath() >> Mock(Path)
+            getAbsolutePath() >> path
+        }
+    }
+
+    def registrableFile(WatchKey key) {
+        return Mock(File) {
+            toPath() >> Mock(Path) {
+                register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
+            }
         }
     }
 }
