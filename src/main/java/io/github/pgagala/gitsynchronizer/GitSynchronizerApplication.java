@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-//TODO - add gui javafx (https://openjfx.io/)
 @Slf4j
 public class GitSynchronizerApplication {
     // paths to listening on defined via args to main, commit interval as well. SSH should be earlier set up.

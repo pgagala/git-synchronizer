@@ -25,31 +25,31 @@ public class ProcessExecutor {
     File executionLocation;
 
     public Response execute(List<String> commands, String description) throws InterruptedException {
-        return executeProcess(description, new ProcessBuilder()
+        return executeProcess(description, commands, new ProcessBuilder()
             .directory(executionLocation)
             .command(commands));
     }
 
     public Response execute(List<String> commands, String description, Duration timeout) throws InterruptedException {
-        return executeProcess(description, new ProcessBuilder()
+        return executeProcess(description, commands, new ProcessBuilder()
             .directory(executionLocation)
             .command(commands),
             timeout);
     }
 
-    private Response executeProcess(String description, ProcessBuilder processBuilder) throws InterruptedException {
+    private Response executeProcess(String description, List<String> commands, ProcessBuilder processBuilder) throws InterruptedException {
         try {
             return executeAndWaitUntilFinished(description, processBuilder.start());
         } catch (IOException exception) {
-            return Response.failure(format("Unsuccessful %s process execution, exception: %s", description, exception));
+            return Response.failure(format("Unsuccessful %s process execution, commands: %s, exception: %s", description, commands, exception));
         }
     }
 
-    private Response executeProcess(String description, ProcessBuilder processBuilder, Duration timeout) throws InterruptedException {
+    private Response executeProcess(String description, List<String> commands, ProcessBuilder processBuilder, Duration timeout) throws InterruptedException {
         try {
             return executeAndWaitForDuration(description, processBuilder.start(), timeout);
         } catch (IOException exception) {
-            return Response.failure(format("Unsuccessful %s process execution, exception: %s", description, exception));
+            return Response.failure(format("Unsuccessful %s process execution, commands: %s, exception: %s", description, commands, exception));
         }
     }
 

@@ -22,7 +22,9 @@ abstract class IntegrationSpec extends Specification {
                 .withPull(true)
                 .withBuild(true)
         dockerComposeContainer.start()
-        def network = dockerComposeContainer.getContainerByServiceName("git-server_1").get().containerInfo.getNetworkSettings().getNetworks().find { it.key.contains("my-net") }
+        def network = dockerComposeContainer.getContainerByServiceName("git-server_1").get()
+                .containerInfo.getNetworkSettings()
+                .getNetworks().find { it.key.contains("my-net") }
         gitServerIp = network.value.ipAddress
         gitServerNetwork = network.key
     }

@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -121,12 +122,12 @@ class GitService {
         List<String> addCommand = getDockerGitCommandForLocalExecution(of("add", "."));
         Response addingResp = processExecutor.execute(addCommand, "git adding file");
 
-        if(lackOfNewChangesInRepository()) {
+        if (lackOfNewChangesInRepository()) {
             return Response.success("No new files changes to commit. File changes are same as already existing in local repository");
         }
 
-        //TODO credentials to configure
-        List<String> commitCommand = getDockerGitCommandForLocalExecution(of("-c", "user.name='haker bonzo'", "-c", "user.email=hakier@bonzo.pl",
+        String email = "user.email=git@synchronizer-" + UUID.randomUUID() + ".com";
+        List<String> commitCommand = getDockerGitCommandForLocalExecution(of("-c", "user.name='git synchronizer'", "-c", email,
             "commit", "-m",
             getCommitMessage(fileChanges)));
         Response committingResp = processExecutor.execute(commitCommand, "git committing");
@@ -139,13 +140,13 @@ class GitService {
 
     private boolean lackOfNewChangesInRepository() throws InterruptedException {
         List<String> statusCommand = getDockerGitCommandForLocalExecution(of("status"));
-        return processExecutor.execute(statusCommand,"git status").result()
+        return processExecutor.execute(statusCommand, "git status").result()
             .contains("nothing");
     }
 
     private String getCommitMessage(FileChanges fileChanges) {
         StringBuilder commitMessageBuilder = new StringBuilder();
-        fileChanges.forEach(f -> commitMessageBuilder.append(f.toString()).append("/n"));
+        fileChanges.forEach(f -> commitMessageBuilder.append(f.toString()).append(" /n"));
         return commitMessageBuilder.substring(0, commitMessageBuilder.lastIndexOf(NEW_LINE));
     }
 

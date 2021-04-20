@@ -7,7 +7,6 @@ import spock.lang.Specification
 import java.nio.file.Path
 
 
-//TODO add cases for gitrepository path and branch
 @SuppressWarnings("GroovyAccessibility")
 class GitSynchronizerApplicationArgsParserSpec extends Specification {
 
