@@ -4,7 +4,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,7 +38,7 @@ public class ProcessExecutor {
 
     private Response executeProcess(String description, List<String> commands, ProcessBuilder processBuilder) throws InterruptedException {
         try {
-            return executeAndWaitUntilFinished(description, processBuilder.start());
+            return executeAndWaitUntilFinished(description, commands, processBuilder.start());
         } catch (IOException exception) {
             return Response.failure(format("Unsuccessful %s process execution, commands: %s, exception: %s", description, commands, exception));
         }
@@ -47,34 +46,34 @@ public class ProcessExecutor {
 
     private Response executeProcess(String description, List<String> commands, ProcessBuilder processBuilder, Duration timeout) throws InterruptedException {
         try {
-            return executeAndWaitForDuration(description, processBuilder.start(), timeout);
+            return executeAndWaitForDuration(description, commands, processBuilder.start(), timeout);
         } catch (IOException exception) {
             return Response.failure(format("Unsuccessful %s process execution, commands: %s, exception: %s", description, commands, exception));
         }
     }
 
-    private Response executeAndWaitForDuration(String description, Process process, Duration duration) throws InterruptedException, IOException {
+    private Response executeAndWaitForDuration(String description, List<String> commands, Process process, Duration duration) throws InterruptedException, IOException {
         StringBuilder responseBuilder = getResponseBuilder(process);
         boolean response = process.waitFor(duration.getSeconds(), TimeUnit.SECONDS);
         if (!response) {
-            return printFailureResponseMessage(description, process);
+            return printFailureResponseMessage(description, commands, process);
         }
         return Response.success(responseBuilder.toString());
     }
 
-    private Response executeAndWaitUntilFinished(String description, Process process) throws InterruptedException, IOException {
+    private Response executeAndWaitUntilFinished(String description, List<String> commands, Process process) throws InterruptedException, IOException {
         StringBuilder responseBuilder = getResponseBuilder(process);
         int responseCode = process.waitFor();
         if (responseCode != 0) {
-            return printFailureResponseMessage(description, process);
+            return printFailureResponseMessage(description, commands, process);
         }
         return Response.success(responseBuilder.toString());
     }
 
-    @NotNull
-    private Response printFailureResponseMessage(String description, Process process) {
-        log.error("Unsuccessful {} process execution: {}", description, process);
-        return Response.failure(format("Unsuccessful %s process execution: %s", description, process));
+    private Response printFailureResponseMessage(String description, List<String> commands, Process process) {
+        String errorMsg = String.format("Unsuccessful %s process execution: %s. Commands: %s", description, process, commands);
+        log.error(errorMsg);
+        return Response.failure(errorMsg);
     }
 
 
