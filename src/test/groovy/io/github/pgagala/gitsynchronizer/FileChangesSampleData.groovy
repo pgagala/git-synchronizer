@@ -8,7 +8,9 @@ import io.github.pgagala.gitsynchronizer.FileModified
 import sun.nio.fs.AbstractWatchKey
 
 import java.nio.file.StandardWatchEventKinds
+import java.nio.file.WatchEvent
 
+@SuppressWarnings("GroovyAccessibility")
 trait FileChangesSampleData {
 
     FileChanges fileChanges(List<FileChange> fileChanges) {
@@ -27,15 +29,27 @@ trait FileChangesSampleData {
         return FileDeleted.of(file)
     }
 
-    def eventModify(File file) {
-        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_MODIFY, file.name)
+    WatchEvent<?> eventModify(File file) {
+        return eventModify(file.name)
     }
 
-    def eventCreate(File file) {
-        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_CREATE, file.name)
+    WatchEvent<?> eventModify(String fileName) {
+        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_MODIFY, fileName)
     }
 
-    def eventDelete(File file) {
-        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_DELETE, file.name)
+    WatchEvent<?> eventCreate(File file) {
+        return eventCreate(file.name)
+    }
+
+    WatchEvent<?> eventCreate(String fileName) {
+        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_CREATE, fileName)
+    }
+
+    WatchEvent<?> eventDelete(File file) {
+        return eventDelete(file.name)
+    }
+
+    WatchEvent<?> eventDelete(String fileName) {
+        return new AbstractWatchKey.Event<Object>(StandardWatchEventKinds.ENTRY_DELETE, fileName)
     }
 }

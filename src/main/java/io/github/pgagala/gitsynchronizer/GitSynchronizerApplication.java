@@ -12,14 +12,15 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -66,8 +67,7 @@ public class GitSynchronizerApplication {
         Runtime.getRuntime().addShutdownHook(new Thread(repositoryBootstrap::cleanup));
     }
 
-    //TODO not print git server network if absent ?
-    private static void printStartMsg(GitSynchronizerApplicationArgsParser appArgs) throws IOException {
+    private static void printStartMsg(GitSynchronizerApplicationArgsParser appArgs) {
         String startMsg =
             String.format("""
                     Git synchronizer starting with following parameters:
@@ -75,9 +75,15 @@ public class GitSynchronizerApplication {
                     - watching paths: %s
                     - repository path: %s
                     - git branch: %s
-                    - git server network: %s
-                    """, appArgs.serverRemote().getValue(), appArgs.paths(), appArgs.repositoryLocal().getValue(), appArgs.gitBranch().getValue(),
-                appArgs.network().orElse(""));
+                    - ignored file patterns: %s
+                    %s
+                    """,
+                appArgs.serverRemote().getValue(),
+                appArgs.paths(),
+                appArgs.repositoryLocal().getValue(),
+                appArgs.gitBranch().getValue(),
+                appArgs.ignoredFilesPattern(),
+                appArgs.network().map(n -> "- git server network: " + n).orElse(""));
         log.info(startMsg);
     }
 
@@ -103,15 +109,25 @@ public class GitSynchronizerApplication {
             return Collections.unmodifiableList(applicationArgs.paths);
         }
 
-        GitRepositoryLocal repositoryLocal() throws IOException {
+        private final GitRepositoryLocal randomGitRepositoryLocal = new GitRepositoryLocal(
+            new File(System.getProperty("java.io.tmpdir") + "/git" + "-synchronizer-temp-repository-" + UUID.randomUUID())
+        );
+
+        GitRepositoryLocal repositoryLocal() {
             return applicationArgs.gitRepositoryPath != null ?
                 new GitRepositoryLocal(new File(applicationArgs.gitRepositoryPath)) :
-                new GitRepositoryLocal(Files.createTempDirectory("git-synchronizer-temp-repository").toFile());
+                randomGitRepositoryLocal;
         }
 
         GitBranch gitBranch() {
             return applicationArgs.gitBranch != null ? new GitBranch(applicationArgs.gitBranch) : GitBranch.DEFAULT_BRANCH;
         }
+
+        List<Pattern> ignoredFilesPattern() {
+            return applicationArgs.ignoredPattern != null ? applicationArgs.ignoredPattern :
+                List.of(Pattern.compile(IgnoredFiles.SWAP_FILES_PATTERN));
+        }
+
 
         Optional<String> network() {
             return applicationArgs.network != null ? Optional.of(applicationArgs.network) : Optional.empty();
@@ -128,12 +144,11 @@ public class GitSynchronizerApplication {
             )
             private String gitServerRemote;
 
-
             @Parameter(
                 names = {"--paths", "-p"},
+                required = true,
                 converter = PathConverter.class,
                 validateWith = PathValidator.class,
-                required = true,
                 description = "Paths with files which should be monitored (e.g. --paths /c/myDirToMonitor /c/mySecondDirToMonitor"
             )
             private List<Path> paths;
@@ -155,6 +170,14 @@ public class GitSynchronizerApplication {
             private String gitBranch;
 
             @Parameter(
+                names = {"--ignoredPattern", "-i"},
+                description = "Ignored file pattern  (e.g. --ignoredPattern ^bla.*$ ^foo.*bar$). Default is " + IgnoredFiles.SWAP_FILES_PATTERN,
+                converter = IgnoredPatternConverter.class,
+                validateWith = IgnoredPatternValidator.class
+            )
+            private List<Pattern> ignoredPattern;
+
+            @Parameter(
                 names = {"--network", "-n"},
                 arity = 1,
                 description = "Optional docker network. Default is none"
@@ -172,6 +195,14 @@ public class GitSynchronizerApplication {
         }
     }
 
+    private static class IgnoredPatternConverter implements IStringConverter<Pattern> {
+
+        @Override
+        public Pattern convert(String ignoredPattern) {
+            return Pattern.compile(ignoredPattern);
+        }
+    }
+
     public static class PathValidator implements IParameterValidator {
 
         private static final String PATH = "^(/[^/ ]*)+/?$";
@@ -180,6 +211,18 @@ public class GitSynchronizerApplication {
         public void validate(String name, String value) {
             if (!value.matches(PATH)) {
                 throw new ParameterException("Passed path doesn't follow pattern: " + PATH);
+            }
+        }
+    }
+
+    public static class IgnoredPatternValidator implements IParameterValidator {
+
+        @Override
+        public void validate(String name, String value) {
+            try {
+                Pattern.compile(value);
+            } catch (Exception exc) {
+                throw new ParameterException("Passed ignored pattern isn't correct regexp");
             }
         }
     }

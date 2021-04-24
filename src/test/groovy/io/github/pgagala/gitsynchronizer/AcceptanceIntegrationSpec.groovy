@@ -1,6 +1,7 @@
 package io.github.pgagala.gitsynchronizer
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import io.github.pgagala.gitsynchronizer.util.TestGitService
 import org.apache.commons.io.FileUtils
 import spock.lang.Timeout
 import spock.util.concurrent.PollingConditions
@@ -30,6 +31,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
     File folder1File0
     File folder1File
     File folder1Folder
+    File folder1FolderFileSwap
     File folder1FolderFile2
     File folder1FolderFile3
     File folder1FolderFile4
@@ -57,6 +59,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         folder1File0 = new File("$testFolder.path/folder1/file0").with(true) { it.createNewFile() }
         folder1File = new File("$testFolder.path/folder1/file1.1").with(true) { it.createNewFile() }
         folder1Folder = new File("$testFolder.path/folder1/folder").with(true) { it.mkdir() }
+        folder1FolderFileSwap = new File("$testFolder.path/folder1/folder/.file.swp").with(true) { it.createNewFile() }
         folder1FolderFile2 = new File("$testFolder.path/folder1/folder/file1.2").with(true) { it.createNewFile() }
         folder1FolderFile3 = new File("$testFolder.path/folder1/folder/file1.3").with(true) { it.createNewFile() }
         folder1FolderFile4 = new File("$testFolder.path/folder1/folder/file1.4")
@@ -78,7 +81,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         anotherSynchronizedRepoFolder = Files.createTempDirectory(clonedTestRepoFolderName).toFile()
         anotherSynchronizedRepoFolder2 = Files.createTempDirectory(clonedTestRepoFolderName2).toFile()
 
-        testGitService = new io.github.pgagala.gitsynchronizer.util.TestGitService(new GitRepositoryLocal(synchronizedRepoFolder), gitServerNetwork)
+        testGitService = new TestGitService(new GitRepositoryLocal(synchronizedRepoFolder), gitServerNetwork)
     }
 
     @SuppressWarnings('unused')
@@ -102,7 +105,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
             ExecutorService executor = Executors.newFixedThreadPool(3, new ThreadFactoryBuilder().setNameFormat("acceptance-test-%d").build())
 
         expect: "3 folders with files exist"
-            filesAmount(testFolder) == 13
+            filesAmount(testFolder) == 14
 
         when: "synchronizer is started"
             CompletableFuture<Boolean> appStarted = new CompletableFuture<>()

@@ -31,8 +31,8 @@ public class ProcessExecutor {
 
     public Response execute(List<String> commands, String description, Duration timeout) throws InterruptedException {
         return executeProcess(description, commands, new ProcessBuilder()
-            .directory(executionLocation)
-            .command(commands),
+                .directory(executionLocation)
+                .command(commands),
             timeout);
     }
 
@@ -61,7 +61,8 @@ public class ProcessExecutor {
         return Response.success(responseBuilder.toString());
     }
 
-    private Response executeAndWaitUntilFinished(String description, List<String> commands, Process process) throws InterruptedException, IOException {
+    private Response executeAndWaitUntilFinished(String description, List<String> commands, Process process) throws InterruptedException,
+        IOException {
         StringBuilder responseBuilder = getResponseBuilder(process);
         int responseCode = process.waitFor();
         if (responseCode != 0) {
@@ -71,7 +72,7 @@ public class ProcessExecutor {
     }
 
     private Response printFailureResponseMessage(String description, List<String> commands, Process process) {
-        String errorMsg = String.format("Unsuccessful %s process execution: %s. Commands: %s", description, process, commands);
+        String errorMsg = String.format("Unsuccessful %s process execution: %s. Command: \"%s\"", description, process, String.join(" ", commands));
         log.error(errorMsg);
         return Response.failure(errorMsg);
     }

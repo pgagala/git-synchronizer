@@ -80,20 +80,35 @@ class FileManagerSpec extends Specification {
             forceDelete(targetPathFile)
 
         where:
-            files << [[dirWithContent(), file()], [dirWithContent()], [file()]]
+            files << [
+                    [dirWithContent(), file()],
+                    [dirWithContent()],
+                    [file()],
+                    [file(), swapFile()]
+            ]
             size = files.size()
     }
 
-    File dirWithContent() {
+    static File dirWithContent() {
         def dir = Files.createTempDirectory("testDir_" + RandomStringUtils.randomAlphabetic(4)).toFile()
         Files.createDirectory(Path.of(dir.getAbsolutePath().toString(), "/subDir")).toFile()
 
         return dir
     }
 
-    File file() {
+    static File file() {
         def file = Files.createTempFile(
                 "testFile_${RandomStringUtils.randomAlphabetic(4)}",
+                RandomStringUtils.randomAlphabetic(4))
+                .toFile()
+        file.createNewFile()
+
+        return file
+    }
+
+    static File swapFile() {
+        def file = Files.createTempFile(
+                ".testFile_${RandomStringUtils.randomAlphabetic(4)}.swp",
                 RandomStringUtils.randomAlphabetic(4))
                 .toFile()
         file.createNewFile()

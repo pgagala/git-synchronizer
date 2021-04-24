@@ -33,7 +33,7 @@ class GitService {
     private static final String DOCKER = "docker";
     private static final List<String> dockerGitInvocationPrefixWithNetwork = of(DOCKER, "run", "--rm", "--network");
     private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm");
-    private static final List<String> dockerGitInvocationSuffix = of("-v", System.getenv("HOME") + "/.ssh:/root/.ssh", "alpine/git:user");
+    private static final List<String> dockerGitInvocationSuffix = of("-v", System.getenv("HOME") + "/.ssh:/home/git-user/.ssh", "alpine/git:user");
     private static final String NEW_LINE = "/n";
     private static final String ORIGIN = "origin";
     List<String> dockerGitInvocationCommand;
@@ -48,7 +48,7 @@ class GitService {
         this.gitBranch = gitBranch;
         this.processExecutor = new ProcessExecutor(this.gitRepositoryLocalFile);
         dockerGitInvocationCommand =
-            Stream.of(dockerGitInvocationPrefix, of("-v", repositoryLocal.getValue() + ":/git"), dockerGitInvocationSuffix)
+            Stream.of(dockerGitInvocationPrefix, of("-v", gitRepositoryLocalFile.getAbsolutePath() + ":/git"), dockerGitInvocationSuffix)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toUnmodifiableList());
     }
@@ -92,8 +92,8 @@ class GitService {
     }
 
     private Response createNewBranchAndSwitch() throws InterruptedException {
-        List<String> initCommand = getDockerGitCommandForLocalExecution(of("checkout", "-b", gitBranch.getValue()));
-        return processExecutor.execute(initCommand, "git checkout -b");
+        List<String> createNewBranchAndSwitch = getDockerGitCommandForLocalExecution(of("checkout", "-b", gitBranch.getValue()));
+        return processExecutor.execute(createNewBranchAndSwitch, "git checkout -b");
     }
 
     private Response addRemote() throws InterruptedException {

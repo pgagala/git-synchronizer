@@ -47,18 +47,20 @@ class FileWatcher {
     Function<File, Collection<File>> filesFetcher;
     Map<WatchKey, Path> watchKeyWatchedFolderMap;
     Map<WatchKey, List<File>> watchKeyWatchedFileMap;
+    IgnoredFiles ignoredFiles;
 
-    public FileWatcher(WatchService watchService, List<Path> paths, Function<File, Collection<File>> filesFetcher) throws IOException {
+    public FileWatcher(WatchService watchService, List<Path> paths, Function<File, Collection<File>> filesFetcher, IgnoredFiles ignoredFiles) throws IOException {
         this.watchService = watchService;
         executorService = Executors.newFixedThreadPool(paths.size(), new ThreadFactoryBuilder().setNameFormat("file-watcher-thread-%d").build());
         this.filesFetcher = filesFetcher;
         this.watchKeyWatchedFolderMap = new HashMap<>();
         this.watchKeyWatchedFileMap = new HashMap<>();
+        this.ignoredFiles = ignoredFiles;
         subscribePathsToWatcherService(Collections.unmodifiableList(paths));
     }
 
     public FileWatcher(WatchService watchService, List<Path> paths) throws IOException {
-        this(watchService, paths, f -> FileUtils.listFiles(f, null, false));
+        this(watchService, paths, f -> FileUtils.listFiles(f, null, false), IgnoredFiles.swapIgnoredFiles());
     }
 
     private void subscribePathsToWatcherService(List<Path> paths) throws IOException {
@@ -88,6 +90,7 @@ class FileWatcher {
         filesFetcher.apply(path.toFile())
             .stream()
             .filter(File::isFile)
+            .filter(f -> !ignoredFiles.shouldBeIgnored(f))
             .forEach(this::addFileToInitialFileCreatedEvents);
     }
 
@@ -110,11 +113,12 @@ class FileWatcher {
                     if (watchEvents == null) {
                         continue;
                     }
+                    List<WatchEvent<?>> reducedWatchEvents = ignoredFiles.removeEventsRefersToIgnoredFiles(watchEvents);
                     if (watchKeyWatchedFileMap.containsKey(key)) {
-                        addToFileChangesForWatchedSingleFile(key, watchEvents);
+                        addToFileChangesForWatchedSingleFile(key, reducedWatchEvents);
                     }
                     if (watchKeyWatchedFolderMap.containsKey(key)) {
-                        fileChanges.addAll(toFileChanges(watchEvents, watchKeyWatchedFolderMap.get(key)));
+                        fileChanges.addAll(toFileChanges(reducedWatchEvents, watchKeyWatchedFolderMap.get(key)));
                     }
                     poll = key.reset();
                 }

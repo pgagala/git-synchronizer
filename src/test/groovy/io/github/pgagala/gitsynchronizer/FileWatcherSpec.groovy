@@ -22,7 +22,13 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
     @Shared
     final File FILE2 = file("file2")
 
-    def "On start files from watched paths should be added as created events"() {
+    @Shared
+    final File FILE2_SWP = file(".file2.swp")
+
+    @Shared
+    final File FILE2_SWPX = file(".file2.swpx")
+
+    def "On start files from watched paths should be added (without ignored files) as created events"() {
         given: "file watcher with paths"
             FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [
                     Mock(Path) {
@@ -31,7 +37,7 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
                         }
                         toString() >> "/"
                     }
-            ], { f -> [FILE1, FILE2] })
+            ], { f -> [FILE1, FILE2, FILE2_SWP] }, IgnoredFiles.swapIgnoredFiles())
 
         when: "file watcher is started"
             fileWatcher.run()
@@ -47,9 +53,41 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
                 toFile() >> Mock(File) {
                     isFile() >> false
                 }
-            }], { f -> [FILE1, FILE1] })
+            }], { f -> [FILE1, FILE1] }, IgnoredFiles.noIgnoredFiles())
         then: "exception should be thrown"
             thrown DuplicatedWatchedFileException
+    }
+
+    def "events correspond to ignored file patterns should be ignored during files watching"() {
+        given: "Watch service which returned particular events"
+            WatchKey key = Mock(WatchKey) {
+                pollEvents() >> events
+            }
+            WatchService watchService = Mock(WatchService) {
+                take() >> key
+            }
+            def watchedPaths =
+                    [Mock(Path) {
+                        toString() >> "/"
+                        register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
+                        toFile() >> Mock(File) {
+                            isFile() >> false
+                        }
+                    }]
+            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [] }, IgnoredFiles.swapIgnoredFiles())
+
+        when: "File watcher is started"
+            fileWatcher.run()
+
+        then: "Events without duplication in correct order are returned"
+            new PollingConditions(timeout: 2).eventually {
+                assert fileWatcher.occurredFileChanges() == expectedFileChanges
+            }
+
+        where:
+            events                                                                                    | expectedFileChanges
+            [eventModify(FILE1), eventModify(FILE1), eventCreate(FILE2_SWP)]                          | fileChanges([fileModified(FILE1)])
+            [eventCreate(FILE1), eventCreate(FILE1), eventCreate(FILE2_SWP), eventModify(FILE2_SWPX)] | fileChanges([fileCreated(FILE1)])
     }
 
     def "occurredFileChanges should returned events without duplication"() {
@@ -68,7 +106,7 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
                             isFile() >> false
                         }
                     }]
-            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [] })
+            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [] }, IgnoredFiles.noIgnoredFiles())
 
         when: "File watcher is started"
             fileWatcher.run()
@@ -106,7 +144,7 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
                 register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
                 toFile() >> file1
             }]
-            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [file1] })
+            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [file1] }, IgnoredFiles.noIgnoredFiles())
 
         and: "File watcher is started"
             fileWatcher.run()
@@ -122,15 +160,15 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
                 register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
                 toFile() >> file1
             },
-            Mock(Path) {
-                toString() >> file2.absolutePath
-                register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
-                toFile() >> file2
-            }]
+                            Mock(Path) {
+                                toString() >> file2.absolutePath
+                                register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
+                                toFile() >> file2
+                            }]
             def filesFetcher = Mock(Function<File, Collection<File>>) {
                 apply(_ as File) >>> [[file1], [file2], []]
             }
-            fileWatcher = new FileWatcher(watchService, watchedPaths, filesFetcher)
+            fileWatcher = new FileWatcher(watchService, watchedPaths, filesFetcher, IgnoredFiles.noIgnoredFiles())
 
         and: "File watcher is started"
             fileWatcher.run()
