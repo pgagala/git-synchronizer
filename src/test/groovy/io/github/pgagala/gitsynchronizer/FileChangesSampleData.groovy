@@ -17,6 +17,10 @@ trait FileChangesSampleData {
         return new FileChanges(fileChanges)
     }
 
+    FileInitialized fileInitialized(File file) {
+        return FileInitialized.of(file)
+    }
+
     FileModified fileModified(File file) {
          return FileModified.of(file)
     }

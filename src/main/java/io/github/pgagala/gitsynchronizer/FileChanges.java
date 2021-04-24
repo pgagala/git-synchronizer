@@ -86,6 +86,29 @@ class FileModified implements FileChange {
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Accessors(fluent = true)
+class FileInitialized implements FileChange {
+
+    static FileInitialized of(File file) {
+        return new FileInitialized(file, file.getName());
+    }
+
+    @Getter
+    File file;
+
+    @Getter
+    @EqualsAndHashCode.Include
+    String fileName;
+
+    @Override
+    public String toString() {
+        return format("File initialized (can be new file or modification of file already existing in synchronized repository) from watched paths: %s", file.getAbsolutePath());
+    }
+}
+
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Accessors(fluent = true)
 class FileCreated implements FileChange {
 
     static FileCreated of(File file) {

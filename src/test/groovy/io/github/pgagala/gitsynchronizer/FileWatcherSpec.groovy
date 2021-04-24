@@ -1,6 +1,5 @@
 package io.github.pgagala.gitsynchronizer
 
-
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -8,7 +7,6 @@ import spock.util.concurrent.PollingConditions
 import java.nio.file.Path
 import java.nio.file.WatchKey
 import java.nio.file.WatchService
-import java.util.function.Function
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE
@@ -23,12 +21,15 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
     final File FILE2 = file("file2")
 
     @Shared
+    final File FILE3 = file("file3")
+
+    @Shared
     final File FILE2_SWP = file(".file2.swp")
 
     @Shared
     final File FILE2_SWPX = file(".file2.swpx")
 
-    def "On start files from watched paths should be added (without ignored files) as created events"() {
+    def "On start files from watched paths should be added (without ignored files) as initialized events"() {
         given: "file watcher with paths"
             FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [
                     Mock(Path) {
@@ -43,7 +44,7 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
             fileWatcher.run()
         then: "files situated under paths should be returned as created file events"
             FileChanges occurredFileChanges = fileWatcher.occurredFileChanges()
-            occurredFileChanges == fileChanges([FileCreated.of(FILE1), FileCreated.of(FILE2)])
+            occurredFileChanges == fileChanges([FileInitialized.of(FILE1), FileInitialized.of(FILE2)])
             occurredFileChanges.newOrModifiedFiles() == [FILE1, FILE2]
     }
 
@@ -129,54 +130,32 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
     def "watching single file should be possible"() {
         given: "Watch service which returned particular events"
             WatchKey key = Mock(WatchKey) {
-                pollEvents() >> [eventCreate(FILE1), eventCreate(FILE2), eventCreate(new File("file3"))]
+                pollEvents() >> [eventCreate(FILE1), eventModify(FILE2), eventModify(FILE3)]
             }
             def parentFile = registrableFile(key)
-            def file1 = file("file1", parentFile)
-            def file2 = file("file2", parentFile)
+            def file2 = file(FILE2.name, parentFile)
             WatchService watchService = Mock(WatchService) {
                 take() >> key
             }
 
-        when: "Path pinpoint on file 1"
+        when: "Path pinpoint on file2"
             def watchedPaths = [Mock(Path) {
-                toString() >> file1.absolutePath
+                toString() >> file2.absolutePath
                 register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
-                toFile() >> file1
+                toFile() >> file2
             }]
-            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [file1] }, IgnoredFiles.noIgnoredFiles())
+            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [file2] }, IgnoredFiles.noIgnoredFiles())
 
         and: "File watcher is started"
             fileWatcher.run()
 
         then: "Single file change is returned"
+            List<FileChange> fileChangesL = []
             new PollingConditions(timeout: 2).eventually {
-                assert fileWatcher.occurredFileChanges() == fileChanges([fileCreated(file1)])
+                fileChangesL.addAll(fileWatcher.occurredFileChanges())
+                assert new FileChanges(fileChangesL) == fileChanges([fileInitialized(file2), fileModified(file2)])
             }
-
-        when: "Path pinpoint on file 1, file2"
-            watchedPaths = [Mock(Path) {
-                toString() >> file1.absolutePath
-                register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
-                toFile() >> file1
-            },
-                            Mock(Path) {
-                                toString() >> file2.absolutePath
-                                register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
-                                toFile() >> file2
-                            }]
-            def filesFetcher = Mock(Function<File, Collection<File>>) {
-                apply(_ as File) >>> [[file1], [file2], []]
-            }
-            fileWatcher = new FileWatcher(watchService, watchedPaths, filesFetcher, IgnoredFiles.noIgnoredFiles())
-
-        and: "File watcher is started"
-            fileWatcher.run()
-
-        then: "Single file change is returned"
-            new PollingConditions(timeout: 2).eventually {
-                assert fileWatcher.occurredFileChanges() == fileChanges([fileCreated(file1), fileCreated(file2)])
-            }
+            fileChangesL.size() == 2
     }
 
     def "equal of file changes should work correctly"() {

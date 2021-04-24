@@ -33,8 +33,10 @@ class FileSynchronizer {
                         Thread.sleep(1000);
                         continue;
                     }
-                    log.info("New file changes occurred on watched paths:\n{}", fileChanges);
                     fileManager.copy(fileChanges.newOrModifiedFiles());
+                    if (!gitService.lackOfNewChangesInRepository()) {
+                        log.info("New file changes occurred on watched paths:\n{}", fileChanges);
+                    }
                     fileManager.deleteFromTargetPath(
                         fileChanges.deletedFiles()
                             .stream()

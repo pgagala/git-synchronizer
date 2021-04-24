@@ -67,10 +67,10 @@ class FileWatcher {
         for (Path path : paths) {
             if (path.toFile().isFile()) {
                 subscribeSingleFile(path);
-                addFileToInitialFileCreatedEvents(path.toFile());
+                addFileToInitialFileInitializedEvents(path.toFile());
             } else {
                 watchKeyWatchedFolderMap.put(path.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE), path);
-                addFilesToInitialFileCreatedEvents(path);
+                addFilesToInitialFileInitializedEvents(path);
             }
         }
     }
@@ -86,21 +86,21 @@ class FileWatcher {
         });
     }
 
-    private void addFilesToInitialFileCreatedEvents(Path path) {
+    private void addFilesToInitialFileInitializedEvents(Path path) {
         filesFetcher.apply(path.toFile())
             .stream()
             .filter(File::isFile)
             .filter(f -> !ignoredFiles.shouldBeIgnored(f))
-            .forEach(this::addFileToInitialFileCreatedEvents);
+            .forEach(this::addFileToInitialFileInitializedEvents);
     }
 
-    private void addFileToInitialFileCreatedEvents(File file) {
-        FileCreated fileCreated = FileCreated.of(file);
-        if (fileChanges.contains(fileCreated)) {
-            log.error("There is already a synchronized file with same name as: " + fileCreated.fileName());
-            throw new DuplicatedWatchedFileException("There is already a synchronized file with same name as: " + fileCreated);
+    private void addFileToInitialFileInitializedEvents(File file) {
+        FileInitialized fileInitialized = FileInitialized.of(file);
+        if (fileChanges.contains(fileInitialized)) {
+            log.error("There is already a synchronized file with same name as: " + fileInitialized.fileName());
+            throw new DuplicatedWatchedFileException("There is already a synchronized file with same name as: " + fileInitialized);
         }
-        fileChanges.add(fileCreated);
+        fileChanges.add(fileInitialized);
     }
 
     void run() {

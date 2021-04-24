@@ -138,7 +138,7 @@ class GitService {
         return Response.of(addingResp, committingResp, pushingResp);
     }
 
-    private boolean lackOfNewChangesInRepository() throws InterruptedException {
+    boolean lackOfNewChangesInRepository() throws InterruptedException {
         List<String> statusCommand = getDockerGitCommandForLocalExecution(of("status"));
         return processExecutor.execute(statusCommand, "git status").result()
             .contains("nothing");

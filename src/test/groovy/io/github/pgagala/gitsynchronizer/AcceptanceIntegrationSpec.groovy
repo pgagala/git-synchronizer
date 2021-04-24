@@ -111,7 +111,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
             CompletableFuture<Boolean> appStarted = new CompletableFuture<>()
             executor.submit(() -> {
                 GitSynchronizerApplication.main(
-                        "-p", "$folder1File.path,$folder1Folder.path,$folder2.path,$folder2Folder.path",
+                        "-p", "$folder1File.path,$folder1Folder.path,$folder2File.path,$folder2Folder.path",
                         "-g", GIT_REMOTE.value,
                         "-b", newBranch.value,
                         "-r", synchronizedRepoFolder.getAbsolutePath(),
