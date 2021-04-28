@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-//TODO adjust logging
 @Slf4j
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
@@ -18,14 +17,8 @@ class FileManager {
 
     File targetFilePath;
 
-    FileManager(String targetPath) throws IOException {
+    FileManager(String targetPath) {
         this.targetFilePath = new File(targetPath);
-        //TODO ?
-//        forceDeleteOnExit(targetFilePath);
-    }
-
-    void delete(List<File> files) {
-        files.forEach(this::delete);
     }
 
     void deleteFromTargetPath(List<String> fileNames) {
@@ -41,7 +34,7 @@ class FileManager {
     }
 
     void delete(String fileName) {
-        File fileToDelete = new File(targetFilePath.getAbsolutePath() + "/" + fileName);
+        File fileToDelete = new File(targetFilePath.getAbsolutePath() + File.separator + fileName);
         try {
             FileUtils.forceDelete(fileToDelete);
         } catch (IOException exc) {
