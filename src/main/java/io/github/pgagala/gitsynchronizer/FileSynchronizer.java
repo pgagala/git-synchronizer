@@ -34,7 +34,7 @@ class FileSynchronizer {
                         continue;
                     }
                     fileManager.copy(fileChanges.newOrModifiedFiles());
-                    if (!gitService.lackOfNewChangesInRepository()) {
+                    if (!gitService.lackOfNewChangesInRepository() || !fileChanges.deletedFiles().isEmpty()) {
                         log.info("New file changes occurred on watched paths:\n{}", fileChanges);
                     }
                     fileManager.deleteFromTargetPath(
@@ -46,7 +46,7 @@ class FileSynchronizer {
                 }
             } catch (Exception e) {
                 Thread.currentThread().interrupt();
-                log.error(format("Exception during synchronizing files.%nException: %s", e));
+                log.error(format("Exception during synchronizing files.%nException: %s.", e));
                 throw e;
             }
         });

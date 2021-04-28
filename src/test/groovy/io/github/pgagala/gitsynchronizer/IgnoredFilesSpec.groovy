@@ -7,11 +7,11 @@ import java.util.regex.Pattern
 
 class IgnoredFilesSpec extends Specification implements FileChangesSampleData {
 
-    def "events correspond to swap files should be removed"() {
-        given: "ignored files with swap ignored files"
-            def ignoredFiles = IgnoredFiles.swapIgnoredFiles()
+    def "events correspond to intermediate files should be removed"() {
+        given: "ignored files with intermediate ignored files"
+            def ignoredFiles = IgnoredFiles.intermediateIgnoredFiles()
 
-        expect: "removed events referring to swap ignored files"
+        expect: "removed events referring to intermediate ignored files"
             def removedEvents = ignoredFiles.removeEventsRefersToIgnoredFiles(incomingEvents)
             removedEvents.size() == expectedEventsListAfterRemoval.size()
             expectedEventsListAfterRemoval.eachWithIndex { it, index ->
@@ -19,18 +19,18 @@ class IgnoredFilesSpec extends Specification implements FileChangesSampleData {
             } != null
 
         where:
-            incomingEvents                                                                                            | expectedEventsListAfterRemoval
-            []                                                                                                        | []
-            [eventCreate("file1"), eventCreate(".file2.swp"), eventModify(".file2.swpx"), eventDelete(".file3.swpx")] | [eventCreate("file1")]
-            [eventCreate(".file2.swp"), eventModify(".file2.swpx")]                                                   | []
-            [eventCreate(".file2.sw"), eventModify(".file2.sw2")]                                                     | [eventCreate(".file2.sw"), eventModify(".file2.sw2")]
+            incomingEvents                                                                                                              | expectedEventsListAfterRemoval
+            []                                                                                                                          | []
+            [eventCreate(".file2.swp"), eventModify(".file2.swpx"), eventCreate(".~file2"), eventCreate("~file3")]                      | [eventCreate("~file3")]
+            [eventCreate(".file2.sw"), eventModify(".file2.sw2"), eventModify(".~file2"), eventModify("file3"), eventDelete(".~file2")] | [eventModify("file3")]
+            [eventCreate("file1"), eventCreate(".file2.swp"), eventModify(".file2.swpx"), eventDelete(".file3.swpx")]                   | [eventCreate("file1")]
     }
 
     def "no events should be ignored"() {
-        given: "ignored files with swap ignored files"
+        given: "ignored files"
             def ignoredFiles = IgnoredFiles.noIgnoredFiles()
 
-        expect: "removed events referring to swap ignored files"
+        expect: "no files are ignored"
             def removedEvents = ignoredFiles.removeEventsRefersToIgnoredFiles(incomingEvents)
             removedEvents.size() == expectedEventsListAfterRemoval.size()
             expectedEventsListAfterRemoval.eachWithIndex { it, index ->
@@ -42,7 +42,7 @@ class IgnoredFilesSpec extends Specification implements FileChangesSampleData {
             []                                                                                                        | []
             [eventCreate("file1"), eventCreate(".file2.swp"), eventModify(".file2.swpx"), eventDelete(".file3.swpx")] | [eventCreate("file1"), eventCreate(".file2.swp"), eventModify(".file2.swpx"), eventDelete(".file3.swpx")]
             [eventCreate(".file2.swp"), eventModify(".file2.swpx")]                                                   | [eventCreate(".file2.swp"), eventModify(".file2.swpx")]
-            [eventCreate(".file2.sw"), eventModify(".file2.sw2")]                                                     | [eventCreate(".file2.sw"), eventModify(".file2.sw2")]
+            [eventCreate(".file2.sw"), eventModify(".~file3"), eventModify(".file2.sw2")]                             | [eventCreate(".file2.sw"), eventModify(".~file3"), eventModify(".file2.sw2")]
     }
 
     def "events correspond to predefined patterns should be ignored"() {

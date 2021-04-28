@@ -60,7 +60,7 @@ class FileWatcher {
     }
 
     public FileWatcher(WatchService watchService, List<Path> paths) throws IOException {
-        this(watchService, paths, f -> FileUtils.listFiles(f, null, false), IgnoredFiles.swapIgnoredFiles());
+        this(watchService, paths, f -> FileUtils.listFiles(f, null, false), IgnoredFiles.intermediateIgnoredFiles());
     }
 
     private void subscribePathsToWatcherService(List<Path> paths) throws IOException {

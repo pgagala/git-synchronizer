@@ -18,10 +18,10 @@ class IgnoredFiles {
 
     List<Pattern> ignoredFilePatterns;
 
-    static final String SWAP_FILES_PATTERN = "^\\..+\\.swp.*$";
+    static final String INTERMEDIATE_FILES_PATTERN = "^\\..+\\.sw.*|\\.~.+$";
 
-    static IgnoredFiles swapIgnoredFiles() {
-        return new IgnoredFiles(List.of(Pattern.compile(SWAP_FILES_PATTERN)));
+    static IgnoredFiles intermediateIgnoredFiles() {
+        return new IgnoredFiles(List.of(Pattern.compile(INTERMEDIATE_FILES_PATTERN)));
     }
 
     static IgnoredFiles noIgnoredFiles() {

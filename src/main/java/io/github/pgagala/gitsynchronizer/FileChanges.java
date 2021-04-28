@@ -101,7 +101,7 @@ class FileInitialized implements FileChange {
 
     @Override
     public String toString() {
-        return format("File initialized (can be new file or modification of file already existing in synchronized repository) from watched paths: %s", file.getAbsolutePath());
+        return format("File initialized from watched paths: %s", file.getAbsolutePath());
     }
 }
 

@@ -29,16 +29,26 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
     @Shared
     final File FILE2_SWPX = file(".file2.swpx")
 
+    WatchKey key
+    WatchService watchService
+
+    def setup() {
+        key = Mock(WatchKey) {
+            pollEvents() >> []
+        }
+        watchService = Mock(WatchService) { take() >> key }
+    }
+
     def "On start files from watched paths should be added (without ignored files) as initialized events"() {
         given: "file watcher with paths"
-            FileWatcher fileWatcher = new FileWatcher(Mock(WatchService), [
+            FileWatcher fileWatcher = new FileWatcher(watchService, [
                     Mock(Path) {
                         toFile() >> Mock(File) {
                             isFile() >> false
                         }
                         toString() >> "/"
                     }
-            ], { f -> [FILE1, FILE2, FILE2_SWP] }, IgnoredFiles.swapIgnoredFiles())
+            ], { f -> [FILE1, FILE2, FILE2_SWP, file(".~file3")] }, IgnoredFiles.intermediateIgnoredFiles())
 
         when: "file watcher is started"
             fileWatcher.run()
@@ -50,7 +60,7 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
 
     def "Exception should be thrown on file watcher start if there are any files in watched paths with same file name"() {
         when: "file watcher with duplicated files is created"
-            new FileWatcher(Mock(WatchService), [Mock(Path) {
+            new FileWatcher(watchService, [Mock(Path) {
                 toFile() >> Mock(File) {
                     isFile() >> false
                 }
@@ -75,7 +85,7 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
                             isFile() >> false
                         }
                     }]
-            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [] }, IgnoredFiles.swapIgnoredFiles())
+            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [] }, IgnoredFiles.intermediateIgnoredFiles())
 
         when: "File watcher is started"
             fileWatcher.run()

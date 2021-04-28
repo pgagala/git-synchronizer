@@ -1,10 +1,5 @@
 package io.github.pgagala.gitsynchronizer
 
-import io.github.pgagala.gitsynchronizer.FileChange
-import io.github.pgagala.gitsynchronizer.FileChanges
-import io.github.pgagala.gitsynchronizer.FileCreated
-import io.github.pgagala.gitsynchronizer.FileDeleted
-import io.github.pgagala.gitsynchronizer.FileModified
 import sun.nio.fs.AbstractWatchKey
 
 import java.nio.file.StandardWatchEventKinds
@@ -22,7 +17,7 @@ trait FileChangesSampleData {
     }
 
     FileModified fileModified(File file) {
-         return FileModified.of(file)
+        return FileModified.of(file)
     }
 
     FileCreated fileCreated(File file) {

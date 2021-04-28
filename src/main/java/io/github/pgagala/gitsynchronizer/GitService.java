@@ -71,7 +71,7 @@ class GitService {
             "After program shutdown that will be automatically cleaned up", gitRepositoryLocalFile.getAbsolutePath());
         Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch());
         if (response.isFailure()) {
-            throw new IllegalStateException("Exception during creating repository: " + response.result());
+            throw new IllegalStateException("Exception during creating repository. Check if docker is running. Response: " + response.result());
         }
     }
 
@@ -141,13 +141,13 @@ class GitService {
     boolean lackOfNewChangesInRepository() throws InterruptedException {
         List<String> statusCommand = getDockerGitCommandForLocalExecution(of("status"));
         return processExecutor.execute(statusCommand, "git status").result()
-            .contains("nothing");
+            .contains("nothing to commit");
     }
 
     private String getCommitMessage(FileChanges fileChanges) {
         StringBuilder commitMessageBuilder = new StringBuilder();
-        fileChanges.forEach(f -> commitMessageBuilder.append(f.toString()).append(" /n"));
-        return commitMessageBuilder.substring(0, commitMessageBuilder.lastIndexOf(NEW_LINE));
+        fileChanges.forEach(f -> commitMessageBuilder.append(f.toString()).append(" ").append(System.lineSeparator()));
+        return commitMessageBuilder.toString();
     }
 
     private List<String> getDockerGitCommandForLocalExecution(List<String> gitCommand) {

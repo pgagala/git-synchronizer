@@ -125,7 +125,7 @@ public class GitSynchronizerApplication {
 
         List<Pattern> ignoredFilesPattern() {
             return applicationArgs.ignoredPattern != null ? applicationArgs.ignoredPattern :
-                List.of(Pattern.compile(IgnoredFiles.SWAP_FILES_PATTERN));
+                List.of(Pattern.compile(IgnoredFiles.INTERMEDIATE_FILES_PATTERN));
         }
 
 
@@ -171,7 +171,7 @@ public class GitSynchronizerApplication {
 
             @Parameter(
                 names = {"--ignoredPattern", "-i"},
-                description = "Ignored file pattern  (e.g. --ignoredPattern ^bla.*$ ^foo.*bar$). Default is " + IgnoredFiles.SWAP_FILES_PATTERN,
+                description = "Ignored file pattern  (e.g. --ignoredPattern ^bla.*$ ^foo.*bar$). Default is " + IgnoredFiles.INTERMEDIATE_FILES_PATTERN,
                 converter = IgnoredPatternConverter.class,
                 validateWith = IgnoredPatternValidator.class
             )

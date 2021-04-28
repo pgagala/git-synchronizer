@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
 
 import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic
 
-@Timeout(value = 2222, unit = TimeUnit.MINUTES)
+@Timeout(value = 2, unit = TimeUnit.MINUTES)
 @SuppressWarnings(["GroovyAccessibility", "GroovyAssignabilityCheck"])
 class AcceptanceIntegrationSpec extends IntegrationSpec {
 
@@ -48,7 +48,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
     File anotherSynchronizedRepoFolder
     File anotherSynchronizedRepoFolder2
 
-    io.github.pgagala.gitsynchronizer.util.TestGitService testGitService
+    TestGitService testGitService
 
     @SuppressWarnings('unused')
     def setup() {
