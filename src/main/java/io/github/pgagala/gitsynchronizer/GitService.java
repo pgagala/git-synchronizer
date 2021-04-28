@@ -34,7 +34,6 @@ class GitService {
     private static final List<String> dockerGitInvocationPrefixWithNetwork = of(DOCKER, "run", "--rm", "--network");
     private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm");
     private static final List<String> dockerGitInvocationSuffix = of("-v", System.getenv("HOME") + "/.ssh:/home/git-user/.ssh", "alpine/git:user");
-    private static final String NEW_LINE = "/n";
     private static final String ORIGIN = "origin";
     List<String> dockerGitInvocationCommand;
     File gitRepositoryLocalFile;
