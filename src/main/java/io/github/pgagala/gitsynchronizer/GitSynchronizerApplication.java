@@ -209,9 +209,9 @@ public class GitSynchronizerApplication {
 
         @Override
         public void validate(String name, String value) {
-            if (!value.matches(PATH)) {
-                throw new ParameterException("Passed path doesn't follow pattern: " + PATH);
-            }
+//            if (!value.matches(PATH)) {
+//                throw new ParameterException("Passed path doesn't follow pattern: " + PATH);
+//            }
         }
     }
 
