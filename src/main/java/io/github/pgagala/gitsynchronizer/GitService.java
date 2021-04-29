@@ -50,12 +50,16 @@ class GitService {
             Stream.of(dockerGitInvocationPrefix, of("-v", gitRepositoryLocalFile.getAbsolutePath() + ":/git"), dockerGitInvocationSuffix)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toUnmodifiableList());
+        log.info("!!!sufix: " + dockerGitInvocationSuffix);
     }
 
     private static String getUserHome() {
-        return System.getenv("OS").startsWith("Windows") ?
+        log.info("!!!get env:" + System.getenv("OS"));
+        String home =  System.getenv("OS").startsWith("Windows") ?
             System.getenv("USERPROFILE") :
             System.getenv("HOME");
+        log.info("!!!home:" + home);
+        return home;
     }
 
     GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch, String gitServerNetwork) {
