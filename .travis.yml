@@ -1,3 +1,6 @@
 language: java
+os: linux
 jdk:
   - openjdk15
+script:
+  - ./gradlew clean build
