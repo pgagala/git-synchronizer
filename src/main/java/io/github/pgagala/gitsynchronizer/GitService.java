@@ -33,9 +33,7 @@ class GitService {
     private static final String DOCKER = "docker";
     private static final List<String> dockerGitInvocationPrefixWithNetwork = of(DOCKER, "run", "--rm", "--network");
     private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm");
-    //TODO adjust that
-    //USERPROFILE, File.separator
-    private static final List<String> dockerGitInvocationSuffix = of("-v", System.getenv("USERPROFILE") + File.separator + ".ssh:/home/git-user/.ssh", "alpine/git:user");
+    private static final List<String> dockerGitInvocationSuffix = of("-v", getUserHome() + File.separator + ".ssh:/home/git-user/.ssh", "alpine/git:user");
     private static final String ORIGIN = "origin";
     List<String> dockerGitInvocationCommand;
     File gitRepositoryLocalFile;
@@ -52,6 +50,12 @@ class GitService {
             Stream.of(dockerGitInvocationPrefix, of("-v", gitRepositoryLocalFile.getAbsolutePath() + ":/git"), dockerGitInvocationSuffix)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toUnmodifiableList());
+    }
+
+    private static String getUserHome() {
+        return System.getenv("OS").startsWith("Windows") ?
+            System.getenv("USERPROFILE") :
+            System.getenv("HOME");
     }
 
     GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch, String gitServerNetwork) {
