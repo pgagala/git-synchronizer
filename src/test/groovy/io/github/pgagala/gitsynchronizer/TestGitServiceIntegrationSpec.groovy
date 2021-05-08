@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic
 
 @SuppressWarnings("GroovyAccessibility")
-@Timeout(value = 2, unit = TimeUnit.MINUTES)
+@Timeout(value = 3, unit = TimeUnit.MINUTES)
 class TestGitServiceIntegrationSpec extends IntegrationSpec {
 
     public static final def GIT_REMOTE = new GitServerRemote("http://$gitServerIp/test_repository.git")
@@ -36,9 +36,12 @@ class TestGitServiceIntegrationSpec extends IntegrationSpec {
     }
 
     def cleanup() {
-        if (gitLocal.value.exists()) {
-            FileUtils.forceDelete(gitLocal.value)
+        try {
+            if (gitLocal.value.exists()) {
+                FileUtils.forceDelete(gitLocal.value)
+            }
         }
+        catch (Throwable ignored){}
     }
 
     def "Repository should be cloned"() {

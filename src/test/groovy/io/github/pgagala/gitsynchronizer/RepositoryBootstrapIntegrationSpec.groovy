@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic
 
 @SuppressWarnings("GroovyAccessibility")
-@Timeout(value = 2, unit = TimeUnit.MINUTES)
+@Timeout(value = 3, unit = TimeUnit.MINUTES)
 class RepositoryBootstrapIntegrationSpec extends IntegrationSpec {
 
     File gitRepo
@@ -28,9 +28,12 @@ class RepositoryBootstrapIntegrationSpec extends IntegrationSpec {
     }
 
     def cleanup() {
-        if (gitRepo.exists()) {
-            FileUtils.forceDelete(gitRepo)
+        try {
+            if (gitRepo.exists()) {
+                FileUtils.forceDelete(gitRepo)
+            }
         }
+        catch (Throwable ignored){}
     }
 
     def "On initialization repository should be created if repo doesn't exist"() {

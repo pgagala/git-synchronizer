@@ -27,13 +27,13 @@ import static java.util.List.of;
  */
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Slf4j
-//TODO run integration tests on windows os as well
 class GitService {
 
     private static final String DOCKER = "docker";
     private static final List<String> dockerGitInvocationPrefixWithNetwork = of(DOCKER, "run", "--rm", "--network");
     private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm");
-    private static final List<String> dockerGitInvocationSuffix = of("-v", getUserHome() + File.separator + ".ssh:/home/git-user/.ssh", "alpine/git:user");
+    private static final List<String> dockerGitInvocationSuffix = of("-v", getUserHome() + File.separator + ".ssh:/home/git-user/.ssh", "alpine/git" +
+        ":user");
     private static final String ORIGIN = "origin";
     List<String> dockerGitInvocationCommand;
     File gitRepositoryLocalFile;
@@ -50,16 +50,12 @@ class GitService {
             Stream.of(dockerGitInvocationPrefix, of("-v", gitRepositoryLocalFile.getAbsolutePath() + ":/git"), dockerGitInvocationSuffix)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toUnmodifiableList());
-        log.info("!!!sufix: " + dockerGitInvocationSuffix);
     }
 
     private static String getUserHome() {
-        log.info("!!!get env:" + System.getenv("OS"));
-        String home =  System.getenv("OS").startsWith("Windows") ?
+        return System.getenv("OS").startsWith("Windows") ?
             System.getenv("USERPROFILE") :
             System.getenv("HOME");
-        log.info("!!!home:" + home);
-        return home;
     }
 
     GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch, String gitServerNetwork) {
@@ -78,7 +74,7 @@ class GitService {
         createRepositoryFolderIfDoesNotExist();
         log.info("Creating repository under path: {}. Files will be synchronized in that repository. " +
             "After program shutdown that will be automatically cleaned up", gitRepositoryLocalFile.getAbsolutePath());
-        Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch());
+        Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch(), setFilemode());
         if (response.isFailure()) {
             throw new IllegalStateException("Exception during creating repository. Check if docker is running. Response: " + response.result());
         }
@@ -103,6 +99,11 @@ class GitService {
     private Response createNewBranchAndSwitch() throws InterruptedException {
         List<String> createNewBranchAndSwitch = getDockerGitCommandForLocalExecution(of("checkout", "-b", gitBranch.getValue()));
         return processExecutor.execute(createNewBranchAndSwitch, "git checkout -b");
+    }
+
+    private Response setFilemode() throws InterruptedException {
+        List<String> filemode = getDockerGitCommandForLocalExecution(of("config", "core.filemode", "false"));
+        return processExecutor.execute(filemode, "git config core.filemode false");
     }
 
     private Response addRemote() throws InterruptedException {

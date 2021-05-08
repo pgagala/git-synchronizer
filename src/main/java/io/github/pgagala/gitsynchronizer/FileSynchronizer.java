@@ -46,7 +46,7 @@ class FileSynchronizer {
                 }
             } catch (Exception e) {
                 Thread.currentThread().interrupt();
-                log.error(format("Exception during synchronizing files.%nException: %s.", e));
+                log.error(format("Exception during synchronizing files. Restart application is required.%nException: %s", e));
                 throw e;
             }
         });
