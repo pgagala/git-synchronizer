@@ -5,18 +5,6 @@ os: linux
 dist: trusty
 jdk: openjdk15
 
-#script:
-#  - dockerd --max-concurrent-downloads 2 &>/dev/null
-#  - ./gradlew clean build
-
-jobs:
-  include:
-    - stage: build login
-      script:
-      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    - stage: test
-      script: ./gradlew clean build
-
 services:
   - docker
 
@@ -27,3 +15,7 @@ cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
+
+script:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - ./gradlew clean build

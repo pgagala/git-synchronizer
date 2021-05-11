@@ -27,7 +27,7 @@ import static java.util.List.of;
  */
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Slf4j
-class GitService {
+public class GitService {
 
     private static final String DOCKER = "docker";
     private static final List<String> dockerGitInvocationPrefixWithNetwork = of(DOCKER, "run", "--rm", "--network");
@@ -41,7 +41,7 @@ class GitService {
     GitBranch gitBranch;
     ProcessExecutor processExecutor;
 
-    GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch) {
+    public GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch) {
         this.gitRepositoryLocalFile = repositoryLocal.getValue();
         this.gitServerRemote = serverRemote;
         this.gitBranch = gitBranch;
@@ -58,7 +58,7 @@ class GitService {
             System.getenv("HOME");
     }
 
-    GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch, String gitServerNetwork) {
+    public GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch, String gitServerNetwork) {
         this.gitRepositoryLocalFile = repositoryLocal.getValue();
         this.gitServerRemote = serverRemote;
         this.gitBranch = gitBranch;
