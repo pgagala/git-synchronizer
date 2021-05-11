@@ -44,7 +44,7 @@ class TestGitService {
                 "-v",
                 "${location.getPath()}:/git".toString(),
                 "-v",
-                "${System.getenv("HOME")}.ssh:/root/.ssh".toString(),
+                "${System.getenv("HOME")}/.ssh:/root/.ssh".toString(),
                 "alpine/git:user"
         ]
     }

@@ -3,4 +3,4 @@ dist: trusty
 jdk: openjdk15
 
 script:
-  - ./gradlew build --scan -S
+  - ./gradlew clean build
