@@ -6,6 +6,7 @@ dist: trusty
 jdk: openjdk15
 
 script:
+  - dockerd --max-concurrent-downloads 2 &>/dev/null
   - ./gradlew clean build
 
 services:
