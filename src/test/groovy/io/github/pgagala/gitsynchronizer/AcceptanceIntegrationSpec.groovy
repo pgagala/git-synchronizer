@@ -183,7 +183,9 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
                 appStarted2.isDone() && !appStarted2.isCompletedExceptionally()
             }
         and: "another synchronized repository should has same files as synchronized repository"
-            filesAmount(anotherSynchronizedRepoFolder, "\\.git") == 6
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+                filesAmount(anotherSynchronizedRepoFolder, "\\.git") == 6
+            }
             new File("$anotherSynchronizedRepoFolder/$folder1File0.name").text.endsWith(TRA)
             new File("$anotherSynchronizedRepoFolder/$folder1File1.name").text.endsWith(BLA)
             new File("$anotherSynchronizedRepoFolder/$folder1FolderFile3.name").exists()
