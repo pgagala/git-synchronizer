@@ -1,6 +1,9 @@
-os: linux
-jdk: openjdk15
 language: java
+install: skip
+
+os: linux
+dist: trusty
+jdk: openjdk15
 
 script:
   - ./gradlew build
