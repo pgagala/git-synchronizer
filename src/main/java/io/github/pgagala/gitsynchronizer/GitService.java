@@ -52,8 +52,8 @@ public class GitService {
     }
 
     private static String getUserHome() {
-        log.info("!!!!:"+System.getenv());
-        return System.getenv("OS").startsWith("Windows") ?
+        String osName = System.getenv("OS") == null ? System.getenv("OS_NAME") : "";
+        return osName.startsWith("Windows") ?
             System.getenv("USERPROFILE") :
             System.getenv("HOME");
     }
