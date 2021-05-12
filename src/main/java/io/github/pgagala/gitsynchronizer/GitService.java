@@ -80,7 +80,8 @@ public class GitService {
         createRepositoryFolderIfDoesNotExist();
         log.info("Creating repository under path: {}. Files will be synchronized in that repository. " +
             "After program shutdown that will be automatically cleaned up", gitRepositoryLocalFile.getAbsolutePath());
-        Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch(), setFilemode());
+        Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch());
+//        Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch(), setFilemode());
         if (response.isFailure()) {
             throw new IllegalStateException("Exception during creating repository. Check if docker is running. Response: " + response.result());
         }
