@@ -3,6 +3,7 @@ package io.github.pgagala.gitsynchronizer.util
 import io.github.pgagala.gitsynchronizer.GitBranch
 import io.github.pgagala.gitsynchronizer.GitRepositoryLocal
 import io.github.pgagala.gitsynchronizer.GitServerRemote
+import io.github.pgagala.gitsynchronizer.GitService
 import io.github.pgagala.gitsynchronizer.processexecutor.ProcessExecutor
 import io.github.pgagala.gitsynchronizer.processexecutor.Response
 
@@ -44,7 +45,7 @@ class TestGitService {
                 "-v",
                 "${location.getPath()}:/git".toString(),
                 "-v",
-                "${System.getenv("HOME")}/.ssh:/root/.ssh".toString(),
+                "${GitService.getUserHome()}/.ssh:/root/.ssh".toString(),
                 "alpine/git:user"
         ]
     }
