@@ -49,8 +49,8 @@ class FileSynchronizerSpec extends Specification implements FileChangesSampleDat
                 occurredFileChanges() >>> [filesChanges, new FileChanges([])]
             }
         and: "file synchronizer with mocked git service"
-            GitService gitService = Mockito.mock(GitService)
             FileManager fileManager = Mockito.mock(FileManager)
+            GitService gitService = Mockito.mock(GitService)
             fileSynchronizer = new FileSynchronizer(fileWatcher, gitService, fileManager)
 
         when: "synchronizer is started"
