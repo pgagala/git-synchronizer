@@ -81,7 +81,8 @@ public class GitService {
         log.info("Creating repository under path: {}. Files will be synchronized in that repository. " +
             "After program shutdown that will be automatically cleaned up", gitRepositoryLocalFile.getAbsolutePath());
         Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch());
-        log.info("!:" +  processExecutor.execute(List.of("ls", "-lrt", "/home/travis/.ssh"), "ls lrt")
+        log.info("!:" +  processExecutor.execute(getDockerGitCommandForLocalExecution(of("--version")), "vers")
+//        log.info("!:" +  processExecutor.execute(List.of("ls", "-lrt", "/home/travis/.ssh"), "ls lrt")
         .result());
 //        Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch(), setFilemode());
         if (response.isFailure()) {
