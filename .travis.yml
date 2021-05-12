@@ -18,5 +18,5 @@ jdk: openjdk15
 
 script:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-  - ./gradlew clean test --tests io.github.pgagala.gitsynchronizer.FileSynchronizerSpec
+  - ./gradlew clean test --debug --tests io.github.pgagala.gitsynchronizer.FileSynchronizerSpec
 #  - ./gradlew clean test --scan --debug --tests io.github.pgagala.gitsynchronizer.FileSynchronizerSpec
