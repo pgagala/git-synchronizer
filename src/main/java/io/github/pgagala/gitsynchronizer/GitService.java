@@ -3,7 +3,6 @@ package io.github.pgagala.gitsynchronizer;
 import io.github.pgagala.gitsynchronizer.processexecutor.ProcessExecutor;
 import io.github.pgagala.gitsynchronizer.processexecutor.Response;
 import lombok.AccessLevel;
-import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -53,6 +52,7 @@ public class GitService {
     }
 
     private static String getUserHome() {
+        log.info("!!!!:"+System.getenv());
         return System.getenv("OS").startsWith("Windows") ?
             System.getenv("USERPROFILE") :
             System.getenv("HOME");
@@ -168,20 +168,20 @@ public class GitService {
     }
 }
 
-@Value
-class GitServerRemote {
-    String value;
-}
+//@Value
+//class GitServerRemote {
+//    String value;
+//}
 
-@Value
-class GitRepositoryLocal {
-    File value;
-}
+//@Value
+//class GitRepositoryLocal {
+//    File value;
+//}
 
-@Value
-class GitBranch {
-
-    public static final GitBranch DEFAULT_BRANCH = new GitBranch("master");
-
-    String value;
-}
+//@Value
+//class GitBranch {
+//
+//    public static final GitBranch DEFAULT_BRANCH = new GitBranch("master");
+//
+//    String value;
+//}
