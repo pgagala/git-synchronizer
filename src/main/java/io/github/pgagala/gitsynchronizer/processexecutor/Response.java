@@ -2,12 +2,14 @@ package io.github.pgagala.gitsynchronizer.processexecutor;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 
 import java.util.Arrays;
 
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@ToString
 public class Response {
     boolean successful;
     String result;
