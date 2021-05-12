@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,7 +53,11 @@ public class GitService {
     }
 
     private static String getUserHome() {
-        String osName = System.getenv("OS") == null ? System.getenv("OS_NAME") : "";
+        String osName = System.getenv().entrySet()
+            .stream().filter(e -> e.getKey().startsWith("OS"))
+            .findAny()
+            .map(Map.Entry::getValue)
+            .orElse("");
         return osName.startsWith("Windows") ?
             System.getenv("USERPROFILE") :
             System.getenv("HOME");
