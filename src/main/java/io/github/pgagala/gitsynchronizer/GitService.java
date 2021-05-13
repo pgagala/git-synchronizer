@@ -15,7 +15,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,7 +32,7 @@ public class GitService {
     private static final String DOCKER = "docker";
     private static final List<String> dockerGitInvocationPrefixWithNetwork = of(DOCKER, "run", "--rm", "--network");
     private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm");
-    private static final List<String> dockerGitInvocationSuffix = of("-v", getUserHome() + File.separator + ".ssh:/home/git-user/.ssh", "alpine/git" +
+    private static final List<String> dockerGitInvocationSuffix = of("-v", Environment.getUserHome() + File.separator + ".ssh:/home/git-user/.ssh", "alpine/git" +
         ":user");
     private static final String ORIGIN = "origin";
     List<String> dockerGitInvocationCommand;
@@ -53,17 +52,6 @@ public class GitService {
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    private static String getUserHome() {
-        String osName = System.getenv().entrySet()
-            .stream().filter(e -> e.getKey().startsWith("OS"))
-            .findAny()
-            .map(Map.Entry::getValue)
-            .orElse("");
-        return osName.startsWith("Windows") ?
-            System.getenv("USERPROFILE") :
-            System.getenv("HOME");
-    }
-
     public GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch, String gitServerNetwork) {
         this.gitRepositoryLocalFile = repositoryLocal.getValue();
         this.gitServerRemote = serverRemote;
@@ -80,17 +68,17 @@ public class GitService {
         createRepositoryFolderIfDoesNotExist();
         log.info("Creating repository under path: {}. Files will be synchronized in that repository. " +
             "After program shutdown that will be automatically cleaned up", gitRepositoryLocalFile.getAbsolutePath());
-Response response = Response.of(initRepository());
-        if (response.isFailure()) {
-            throw new IllegalStateException("1 Exception during creating repository. Check if docker is running. Response: " + response.result());
-        }
+//Response response = Response.of(initRepository());
+//        if (response.isFailure()) {
+//            throw new IllegalStateException("1 Exception during creating repository. Check if docker is running. Response: " + response.result());
+//        }
+//
+//         response = Response.of(initRepository());
+//        if (response.isFailure()) {
+//            throw new IllegalStateException("2 Exception during creating repository. Check if docker is running. Response: " + response.result());
+//        }
 
-         response = Response.of(initRepository());
-        if (response.isFailure()) {
-            throw new IllegalStateException("2 Exception during creating repository. Check if docker is running. Response: " + response.result());
-        }
-
-        response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch());
+        Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch());
         if (response.isFailure()) {
             throw new IllegalStateException("Exception during creating repository. Check if docker is running. Response: " + response.result());
         }

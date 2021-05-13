@@ -29,6 +29,7 @@ public class GitSynchronizerApplication {
 
     @SuppressWarnings("java:S3655")
     public static void main(String[] args) throws IOException, InterruptedException {
+        Docker.downloadDockerGitImageOrThrowException();
         GitSynchronizerApplicationArgsParser appArgs = new GitSynchronizerApplicationArgsParser(args);
         printStartMsg(appArgs);
 

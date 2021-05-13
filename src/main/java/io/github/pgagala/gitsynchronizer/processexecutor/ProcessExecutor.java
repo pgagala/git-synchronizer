@@ -80,7 +80,6 @@ public class ProcessExecutor {
         return Response.failure(errorMsg);
     }
 
-
     private StringBuilder getResponseBuilder(Process process) throws IOException {
         BufferedReader reader =
             new BufferedReader(new InputStreamReader(process.getInputStream()));

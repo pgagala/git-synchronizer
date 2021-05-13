@@ -13,6 +13,7 @@ abstract class IntegrationSpec extends Specification {
     protected static final String gitServerNetwork
 
     static {
+        Docker.downloadDockerGitImageOrThrowException()
         dockerComposeContainer = new DockerComposeContainer(new File("gitserver/docker-compose.yaml"))
                 .withBuild(true)
                 .withServices("git-server")

@@ -1,12 +1,11 @@
 package io.github.pgagala.gitsynchronizer.util
 
+import io.github.pgagala.gitsynchronizer.Environment
 import io.github.pgagala.gitsynchronizer.GitBranch
 import io.github.pgagala.gitsynchronizer.GitRepositoryLocal
 import io.github.pgagala.gitsynchronizer.GitServerRemote
-import io.github.pgagala.gitsynchronizer.GitService
 import io.github.pgagala.gitsynchronizer.processexecutor.ProcessExecutor
 import io.github.pgagala.gitsynchronizer.processexecutor.Response
-
 
 @SuppressWarnings("GroovyAccessibility")
 class TestGitService {
@@ -45,7 +44,7 @@ class TestGitService {
                 "-v",
                 "${location.getPath()}:/git".toString(),
                 "-v",
-                "${GitService.getUserHome()}/.ssh:/root/.ssh".toString(),
+                "${Environment.getUserHome()}/.ssh:/root/.ssh".toString(),
                 "alpine/git:user"
         ]
     }
