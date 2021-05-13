@@ -4,11 +4,13 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -71,8 +73,9 @@ public class ProcessExecutor {
         return Response.success(responseBuilder.toString());
     }
 
-    private Response printFailureResponseMessage(String description, List<String> commands, Process process) {
-        String errorMsg = String.format("Unsuccessful %s process execution: %s. Command: \"%s\"", description, process, String.join(" ", commands));
+    private Response printFailureResponseMessage(String description, List<String> commands, Process process) throws IOException {
+        String errorMsg = String.format("Unsuccessful %s process execution: %s. %nCommand: \"%s\". %nProcess response: %s",
+            description, process, String.join(" ", commands), IOUtils.toString(process.getErrorStream(), StandardCharsets.UTF_8.name()));
         log.error(errorMsg);
         return Response.failure(errorMsg);
     }
