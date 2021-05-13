@@ -80,17 +80,13 @@ public class GitService {
         createRepositoryFolderIfDoesNotExist();
         log.info("Creating repository under path: {}. Files will be synchronized in that repository. " +
             "After program shutdown that will be automatically cleaned up", gitRepositoryLocalFile.getAbsolutePath());
-        Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch());
-//        log.info("!:" +  processExecutor.execute(getDockerGitCommandForLocalExecution(of("--version")), "vers")
-//        log.info("!:" +  processExecutor.execute(getDockerGitCommandForLocalExecution(of("--version")), "vers")
-        log.info("!:" +  processExecutor.execute(List.of("mkdir", "/tmp/test_repo_kHos12896541796109783291"), "ls lrt")
+
+           log.info("!:" +  processExecutor.execute(List.of("mkdir", gitRepositoryLocalFile.getAbsolutePath()+"/.bla"), "ls lrt")
+        .result());
+           log.info("!2:" +  processExecutor.execute(List.of("ls","-lrta", gitRepositoryLocalFile.getAbsolutePath()), "ls lrt")
         .result());
 
-        log.info("!2:" +  processExecutor.execute(List.of("touch", "/tmp/test_repo_kHos12896541796109783291/bla"), "ls lrt")
-        .result());
-        log.info("!3:" +  processExecutor.execute(List.of("ls","-lrt", "/tmp/test_repo_kHos12896541796109783291"), "ls lrt")
-        .result());
-//        Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch(), setFilemode());
+        Response response = Response.of(initRepository(), addRemote(), createNewBranchAndSwitch());
         if (response.isFailure()) {
             throw new IllegalStateException("Exception during creating repository. Check if docker is running. Response: " + response.result());
         }
