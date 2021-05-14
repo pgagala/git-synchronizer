@@ -16,6 +16,7 @@ abstract class IntegrationSpec extends Specification {
 
     static {
         startGitServerImageOrThrowException()
+        Docker.startGitUserImageOrThrowException()
         dockerComposeContainer = new DockerComposeContainer(new File("gitserver/docker-compose.yaml"))
                 .withBuild(true)
                 .withServices("git-server")
@@ -32,7 +33,7 @@ abstract class IntegrationSpec extends Specification {
         gitServerNetwork = network.key
     }
 
-     private static void startGitServerImageOrThrowException() throws InterruptedException {
+    private static void startGitServerImageOrThrowException() throws InterruptedException {
         Response response = startGitServer()
         if(response.isFailure()) {
             throw new IllegalStateException("Cannot start docker git image: " + response.toString())
