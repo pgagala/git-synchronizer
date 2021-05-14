@@ -16,6 +16,6 @@ class Docker {
     }
 
     static Response startGitUser() throws InterruptedException {
-        return new ProcessExecutor(new File("./")).execute(List.of("docker", "load", "-i", "git-user.tar.gz"), "loading git-user image");
+        return new ProcessExecutor(new File("./")).execute(List.of("docker", "load", "-i", "git-user_latest.tar.gz"), "loading git-user image");
     }
 }
