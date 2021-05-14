@@ -16,6 +16,7 @@ abstract class IntegrationSpec extends Specification {
     static {
         Docker.downloadDockerGitImageOrThrowException()
         new ProcessExecutor(new File("./")).execute(["docker", "load", "-i", "git-server_latest.tar.gz"], "loading git-server image")
+        new ProcessExecutor(new File("./")).execute(["docker", "load", "-i", "git-user.tar.gz"], "loading git-user image")
         dockerComposeContainer = new DockerComposeContainer(new File("gitserver/docker-compose.yaml"))
                 .withBuild(true)
                 .withServices("git-server")
