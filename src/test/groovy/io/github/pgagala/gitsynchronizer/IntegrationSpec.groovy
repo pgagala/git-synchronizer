@@ -1,5 +1,6 @@
 package io.github.pgagala.gitsynchronizer
 
+import io.github.pgagala.gitsynchronizer.processexecutor.ProcessExecutor
 import org.testcontainers.containers.DockerComposeContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import spock.lang.Specification
@@ -14,6 +15,7 @@ abstract class IntegrationSpec extends Specification {
 
     static {
         Docker.downloadDockerGitImageOrThrowException()
+        new ProcessExecutor(new File("./")).execute(["docker", "load", "-i", "git-server_latest.tar.gz"], "loading git-server image")
         dockerComposeContainer = new DockerComposeContainer(new File("gitserver/docker-compose.yaml"))
                 .withBuild(true)
                 .withServices("git-server")
