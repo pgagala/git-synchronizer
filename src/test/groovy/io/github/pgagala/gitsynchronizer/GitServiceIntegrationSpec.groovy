@@ -44,12 +44,14 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             gitService.createRepository()
 
         then: "Git repository exists"
+        log.info("files before: " + testFolder.listFiles())
             testFolder.listFiles().any { it.getName() == '.git' }
 
         when: "Git repository is removed"
             gitService.deleteRepository()
 
         then: "Git repository doesn't exist"
+        log.info("files after: " + testFolder.listFiles())
             testFolder.listFiles() == null
     }
 
