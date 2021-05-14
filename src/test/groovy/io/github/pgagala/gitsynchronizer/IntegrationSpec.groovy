@@ -41,6 +41,6 @@ abstract class IntegrationSpec extends Specification {
     }
 
     private static Response startGitServer() throws InterruptedException {
-       return new ProcessExecutor(new File("./")).execute(["docker", "load", "-i", "git-server_latest.tar.gz"], "loading git-server image")
+       return new ProcessExecutor(new File("./")).execute(["docker", "load", "-i", "./docker_images/git-image_server_latest.tar.gz"], "loading git-server image")
     }
 }
