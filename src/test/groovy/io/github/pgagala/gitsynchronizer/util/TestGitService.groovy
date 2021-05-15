@@ -42,10 +42,10 @@ class TestGitService {
                 "--network",
                 network,
                 "-v",
-                "${location.getPath()}:/git".toString(),
+                "${location.getPath()}:/home/git-user/git".toString(),
                 "-v",
                 "${Environment.getUserHome()}/.ssh:/root/.ssh".toString(),
-                "alpine/git:latest"
+                "alpine/git:user"
         ]
     }
 }
