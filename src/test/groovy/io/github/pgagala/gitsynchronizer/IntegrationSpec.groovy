@@ -15,16 +15,15 @@ abstract class IntegrationSpec extends Specification {
     protected static final String gitServerNetwork
 
     static {
-        startGitServerImageOrThrowException()
-        Docker.startGitUserImageOrThrowException()
+        Docker.downloadDockerGitImageOrThrowException()
         dockerComposeContainer = new DockerComposeContainer(new File("gitserver/docker-compose.yaml"))
                 .withBuild(true)
                 .withServices("git-server")
                 .withExposedService("git-server", 80)
                 .withRemoveImages(DockerComposeContainer.RemoveImages.ALL)
                 .waitingFor("git-server", Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(2)))
-                .withPull(false)
-                .withBuild(false)
+                .withPull(true)
+                .withBuild(true)
         dockerComposeContainer.start()
         def network = dockerComposeContainer.getContainerByServiceName("git-server_1").get()
                 .containerInfo.getNetworkSettings()
