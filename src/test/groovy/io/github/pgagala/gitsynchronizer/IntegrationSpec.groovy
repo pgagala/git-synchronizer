@@ -1,7 +1,6 @@
 package io.github.pgagala.gitsynchronizer
 
-import io.github.pgagala.gitsynchronizer.processexecutor.ProcessExecutor
-import io.github.pgagala.gitsynchronizer.processexecutor.Response
+
 import org.testcontainers.containers.DockerComposeContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import spock.lang.Specification
@@ -30,16 +29,5 @@ abstract class IntegrationSpec extends Specification {
                 .getNetworks().find { it.key.contains("my-net") }
         gitServerIp = network.value.ipAddress
         gitServerNetwork = network.key
-    }
-
-    private static void startGitServerImageOrThrowException() throws InterruptedException {
-        Response response = startGitServer()
-        if(response.isFailure()) {
-            throw new IllegalStateException("Cannot start docker git image: " + response.toString())
-        }
-    }
-
-    private static Response startGitServer() throws InterruptedException {
-       return new ProcessExecutor(new File("./")).execute(["docker", "load", "-i", "./docker_images/git-image_server_latest.tar.gz"], "loading git-server image")
     }
 }

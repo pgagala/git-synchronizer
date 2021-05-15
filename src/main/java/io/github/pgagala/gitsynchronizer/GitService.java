@@ -47,7 +47,7 @@ public class GitService {
         this.gitBranch = gitBranch;
         this.processExecutor = new ProcessExecutor(this.gitRepositoryLocalFile);
         dockerGitInvocationCommand =
-            Stream.of(dockerGitInvocationPrefix, of("-v", gitRepositoryLocalFile.getAbsolutePath() + ":/home/git-user/git"), dockerGitInvocationSuffix)
+            Stream.of(dockerGitInvocationPrefix, of("-v", gitRepositoryLocalFile.getAbsolutePath() + ":/git"), dockerGitInvocationSuffix)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toUnmodifiableList());
     }
