@@ -33,7 +33,7 @@ public class GitService {
     private static final List<String> dockerGitInvocationPrefixWithNetwork = of(DOCKER, "run", "--rm", "--network");
     private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm");
     private static final List<String> dockerGitInvocationSuffix = of("-v", Environment.getUserHome() + File.separator + ".ssh:/home/git-user/.ssh", "alpine/git" +
-        ":latest");
+        ":user");
     private static final String ORIGIN = "origin";
     List<String> dockerGitInvocationCommand;
     File gitRepositoryLocalFile;
@@ -47,7 +47,7 @@ public class GitService {
         this.gitBranch = gitBranch;
         this.processExecutor = new ProcessExecutor(this.gitRepositoryLocalFile);
         dockerGitInvocationCommand =
-            Stream.of(dockerGitInvocationPrefix, of("-v", gitRepositoryLocalFile.getAbsolutePath() + ":/git"), dockerGitInvocationSuffix)
+            Stream.of(dockerGitInvocationPrefix, of("-v", gitRepositoryLocalFile.getAbsolutePath() + ":/home/git-user/git"), dockerGitInvocationSuffix)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toUnmodifiableList());
     }
