@@ -1,4 +1,5 @@
 language: java
+install: skip
 
 os: linux
 dist: trusty
@@ -15,12 +16,7 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
 
-install:
-  - git clone git@github.com:$TRAVIS_REPO_SLUG.git --branch=$TRAVIS_BRANCH
-  - cd $TRAVIS_REPO_SLUG
-  - git checkout -qf $TRAVIS_COMMIT
-
 script:
-#  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 #  - ./gradlew clean build
   - ./gradlew test --tests io.github.pgagala.gitsynchronizer.GitServiceIntegrationSpec
