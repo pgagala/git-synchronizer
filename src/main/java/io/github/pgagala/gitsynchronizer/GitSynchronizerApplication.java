@@ -37,7 +37,7 @@ public class GitSynchronizerApplication {
         GitService gitService = appArgs.network().isPresent() ?
             new GitService(appArgs.serverRemote(), gitRepositoryLocal, appArgs.gitBranch(), appArgs.network().get()) :
             new GitService(appArgs.serverRemote(), gitRepositoryLocal, appArgs.gitBranch());
-        FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), appArgs.paths());
+        FileWatcher fileWatcher = new FileWatcher(FileSystems.getDefault().newWatchService(), appArgs.paths(), appArgs.ignoredFilesPattern());
         FileManager fileManager = new FileManager(gitRepositoryLocal.getValue());
         RepositoryBootstrap repositoryBootstrap = new RepositoryBootstrap(gitService);
         FileSynchronizer fileSynchronizer = new FileSynchronizer(fileWatcher, gitService, fileManager);
@@ -113,9 +113,9 @@ public class GitSynchronizerApplication {
         }
 
         //TODO check if ignoring can be disabled
-        List<Pattern> ignoredFilesPattern() {
-            return applicationArgs.ignoredPattern != null ? applicationArgs.ignoredPattern :
-                List.of(Pattern.compile(IgnoredFiles.INTERMEDIATE_FILES_PATTERN));
+        IgnoredFiles ignoredFilesPattern() {
+            return applicationArgs.ignoredPattern != null ? IgnoredFiles.from(applicationArgs.ignoredPattern) :
+                IgnoredFiles.intermediateIgnoredFiles();
         }
 
 
@@ -139,7 +139,8 @@ public class GitSynchronizerApplication {
                 required = true,
                 converter = PathConverter.class,
                 validateWith = PathValidator.class,
-                description = "Paths with files which should be monitored (e.g. --paths /c/myDirToMonitor /c/mySecondDirToMonitor"
+                description = "Paths with files which should be monitored (e.g. for unix: \"--paths /home/myDirToMonitor,/home/mySecondDirToMonitor\" and for windows: " +
+                    "\"--paths C:\\myDirToMonitor,C:\\mySecondDirToMonitor\""
             )
             private List<Path> paths;
 
@@ -147,7 +148,7 @@ public class GitSynchronizerApplication {
                 names = {"--repositoryPath", "-r"},
                 arity = 1,
                 description = "Repository path under which backup of file changes should be stored (e.g. --repositoryPath /tmp/mySynchronizedRepo)." +
-                    " Default is somewhere in tmp folder",
+                    " Default is somewhere in operating system's tmp folder",
                 validateWith = PathValidator.class
             )
             private String gitRepositoryPath;

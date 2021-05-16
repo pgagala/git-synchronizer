@@ -2,10 +2,12 @@ package io.github.pgagala.gitsynchronizer;
 
 import io.github.pgagala.gitsynchronizer.processexecutor.ProcessExecutor;
 import io.github.pgagala.gitsynchronizer.processexecutor.Response;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.util.List;
 
+@Slf4j
 class Docker {
 
     static Response buildDockerGitImage() throws InterruptedException {
@@ -14,9 +16,11 @@ class Docker {
     }
 
     static void buildDockerGitImageOrThrowException() throws InterruptedException {
+        log.info("Building git image...");
         Response response = buildDockerGitImage();
         if (response.isFailure()) {
             throw new IllegalStateException("Cannot build docker git image: " + response.toString());
         }
+        log.info("Git image built");
     }
 }

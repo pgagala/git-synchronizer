@@ -94,11 +94,6 @@ public class GitService {
         return processExecutor.execute(createNewBranchAndSwitch, "git checkout -b");
     }
 
-    private Response setFilemode() throws InterruptedException {
-        List<String> filemode = getDockerGitCommandForLocalExecution(of("config", "core.filemode", "false"));
-        return processExecutor.execute(filemode, "git config core.filemode false");
-    }
-
     private Response addRemote() throws InterruptedException {
         List<String> addingRemoteCommand = getDockerGitCommandForLocalExecution(of("remote", "add", ORIGIN, gitServerRemote.getValue()));
         return processExecutor.execute(addingRemoteCommand, format("git adding remote %s", gitServerRemote));
@@ -113,7 +108,7 @@ public class GitService {
             FileUtils.forceDelete(gitRepositoryLocalFile);
             return Response.success();
         } catch (IOException exc) {
-            String errorMsg = String.format("Unsuccessful deleting repository under path: %s. Error msg: %s",
+            String errorMsg = String.format("Unsuccessful deleting repository under path: %s. Please try remove repository folder manually. Error msg: %s",
                 gitRepositoryLocalFile.getAbsolutePath(),
                 exc.getMessage());
             log.error(errorMsg);
