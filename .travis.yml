@@ -19,4 +19,4 @@ cache:
 script:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 #  - ./gradlew clean build
-  - ./gradlew clean test --tests io.github.pgagala.gitsynchronizer.GitServiceIntegrationSpec
+  - ./gradlew test --tests io.github.pgagala.gitsynchronizer.GitServiceIntegrationSpec
