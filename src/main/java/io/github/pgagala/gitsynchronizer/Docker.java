@@ -8,15 +8,15 @@ import java.util.List;
 
 class Docker {
 
-    static Response downloadDockerGitImage() throws InterruptedException {
-        return new ProcessExecutor(new File(Environment.getUserHome())).execute(List.of("docker", "pull", "alpine/git:user"), "download git docker " +
-            "image");
+    static Response buildDockerGitImage() throws InterruptedException {
+        return new ProcessExecutor(new File("").getAbsoluteFile())
+            .execute(List.of("docker", "build", "./", "-f", "./docker/git.Dockerfile", "-t", "git"), "build git docker image");
     }
 
-    static void downloadDockerGitImageOrThrowException() throws InterruptedException {
-        Response response = downloadDockerGitImage();
+    static void buildDockerGitImageOrThrowException() throws InterruptedException {
+        Response response = buildDockerGitImage();
         if (response.isFailure()) {
-            throw new IllegalStateException("Cannot download docker git image: " + response.toString());
+            throw new IllegalStateException("Cannot build docker git image: " + response.toString());
         }
     }
 }
