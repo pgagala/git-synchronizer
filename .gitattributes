@@ -1,0 +1,2 @@
+git.conf text eol=lf
+git-create-repo.sh text eol=lf

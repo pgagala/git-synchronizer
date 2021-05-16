@@ -3,7 +3,7 @@ services:
   git-server:
     build:
       dockerfile: gitserver.Dockerfile
-      context: .
+      context: ""
     image: git-server
     restart: always
     networks:

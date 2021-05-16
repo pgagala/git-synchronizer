@@ -16,10 +16,11 @@ import java.util.concurrent.TimeUnit
 
 import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic
 
-@Timeout(value = 2, unit = TimeUnit.MINUTES)
+@Timeout(value = 5, unit = TimeUnit.MINUTES)
 @SuppressWarnings(["GroovyAccessibility", "GroovyAssignabilityCheck"])
 class AcceptanceIntegrationSpec extends IntegrationSpec {
 
+    public static final int WAITING_IN_SEC = 15
     public static final GitServerRemote GIT_REMOTE = new GitServerRemote("http://$gitServerIp/test_repository.git")
     public static final String BAR = "bar"
     public static final String FOO = "foo"
@@ -29,7 +30,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
     File testFolder
     File folder1
     File folder1File0
-    File folder1File
+    File folder1File1
     File folder1Folder
     File folder1FolderFileSwap
     File folder1FolderFile2
@@ -57,7 +58,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
 
         folder1 = new File("$testFolder.path/folder1").with(true) { it.mkdir() }
         folder1File0 = new File("$testFolder.path/folder1/file0").with(true) { it.createNewFile() }
-        folder1File = new File("$testFolder.path/folder1/file1.1").with(true) { it.createNewFile() }
+        folder1File1 = new File("$testFolder.path/folder1/file1.1").with(true) { it.createNewFile() }
         folder1Folder = new File("$testFolder.path/folder1/folder").with(true) { it.mkdir() }
         folder1FolderFileSwap = new File("$testFolder.path/folder1/folder/.file.swp").with(true) { it.createNewFile() }
         folder1FolderFile2 = new File("$testFolder.path/folder1/folder/file1.2").with(true) { it.createNewFile() }
@@ -86,15 +87,18 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
 
     @SuppressWarnings('unused')
     def cleanup() {
-        if (testFolder.exists()) {
-            FileUtils.forceDelete(testFolder)
+        try {
+            if (testFolder.exists()) {
+                FileUtils.forceDelete(testFolder)
+            }
+            if (synchronizedRepoFolder.exists()) {
+                FileUtils.forceDelete(synchronizedRepoFolder)
+            }
+            if (anotherSynchronizedRepoFolder.exists()) {
+                FileUtils.forceDelete(anotherSynchronizedRepoFolder)
+            }
         }
-        if (synchronizedRepoFolder.exists()) {
-            FileUtils.forceDelete(synchronizedRepoFolder)
-        }
-        if (anotherSynchronizedRepoFolder.exists()) {
-            FileUtils.forceDelete(anotherSynchronizedRepoFolder)
-        }
+        catch (Throwable ignored){}
     }
 
     def "acceptance test"() {
@@ -108,34 +112,26 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
             filesAmount(testFolder) == 14
 
         when: "synchronizer is started"
-            CompletableFuture<Boolean> appStarted = new CompletableFuture<>()
-            executor.submit(() -> {
-                GitSynchronizerApplication.main(
-                        "-p", "$folder1File.path,$folder1Folder.path,$folder2File.path,$folder2Folder.path",
-                        "-g", GIT_REMOTE.value,
-                        "-b", newBranch.value,
-                        "-r", synchronizedRepoFolder.getAbsolutePath(),
-                        "-n", gitServerNetwork)
-                appStarted.complete(true)
-                return appStarted
-            })
-
+            CompletableFuture<Boolean> appStarted =
+                    starApplication(executor, newBranch,
+                            "$folder1File1.path,$folder1Folder.path,$folder2File.path,$folder2Folder.path",
+                            synchronizedRepoFolder)
         then: "app started"
-            new PollingConditions(timeout: 15).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
                 appStarted.isDone() && !appStarted.isCompletedExceptionally()
             }
         and: "all files from watched folders are copied to local synchronized repository folder"
-            new PollingConditions(timeout: 15).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
                 assert filesAmount(synchronizedRepoFolder, "\\.git") == 6
             }
 
         when: "folder1File0 is edited"
             folder1File0.append(TRA)
         and: "folder1File is edited"
-            folder1File.append(BLA)
+            folder1File1.append(BLA)
         then: "watched file is copied to synchronized repository"
-            new PollingConditions(timeout: 15).eventually {
-                new File("$synchronizedRepoFolder/$folder1File.name").text.endsWith(BLA)
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+                new File("$synchronizedRepoFolder/$folder1File1.name").text.endsWith(BLA)
             }
         and: "non watched file is not copied"
             !new File("$synchronizedRepoFolder/$folder1File0.name").exists()
@@ -143,87 +139,87 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         when: "folder1FolderFile2 is edited"
             folder1FolderFile2.append(FOO)
         then: "changed file is copied to synchronized repository"
-            new PollingConditions(timeout: 15).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
                 new File("$synchronizedRepoFolder/$folder1FolderFile2.name").text.endsWith(FOO)
             }
 
         when: "folder1FolderFile2 is removed"
             folder1FolderFile2.delete()
-        then: "file is deleted from synchronized repository"
-            new PollingConditions(timeout: 15).eventually {
-                !new File("$synchronizedRepoFolder/$folder1FolderFile2.name").exists()
+        then: "file is deleted from synchronized repository. Last change is visible in git log"
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+                !new File("$synchronizedRepoFolder/$folder1FolderFile2.name").exists() &&
+                        testGitService.log().result()
+                                .contains("File deleted: $folder1FolderFile2")
             }
 
         when: "folder1FolderFile4 is added"
             folder1FolderFile4.createNewFile()
         then: "changed file is copied to synchronized repository"
-            new PollingConditions(timeout: 15).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
                 new File("$synchronizedRepoFolder/$folder1FolderFile4.name").exists()
             }
 
         when: "folder2File is edited"
             folder2File.append(BAR)
         then: "changed file is copied to synchronized repository"
-            new PollingConditions(timeout: 15).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
                 new File("$synchronizedRepoFolder/$folder2File.name").text.endsWith(BAR)
             }
 
         when: "folder2FolderFile3 is removed"
             folder2FolderFile3.delete()
         then: "file is deleted from synchronized repository. Last change is visible in git log"
-            new PollingConditions(timeout: 15).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
                 !new File("$synchronizedRepoFolder/$folder2FolderFile3.name").exists() &&
                         testGitService.log().result()
                                 .contains("File deleted: $folder2FolderFile3")
             }
 
         when: "app is started with another synchronized repository"
-            CompletableFuture<Boolean> appStarted2 = new CompletableFuture<>()
-            executor.submit(() -> {
-                GitSynchronizerApplication.main(
-                        "-p", "$folder1.path",
-                        "-g", GIT_REMOTE.value,
-                        "-b", newBranch.value,
-                        "-r", anotherSynchronizedRepoFolder.getAbsolutePath(),
-                        "-n", gitServerNetwork)
-                appStarted2.complete(true)
-                return appStarted2
-            })
-
+            CompletableFuture<Boolean> appStarted2 =
+                    starApplication(executor, newBranch, "$folder1.path", anotherSynchronizedRepoFolder)
         then: "app started"
-            new PollingConditions(timeout: 15).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
                 appStarted2.isDone() && !appStarted2.isCompletedExceptionally()
             }
         and: "another synchronized repository should has same files as synchronized repository"
-            filesAmount(anotherSynchronizedRepoFolder, "\\.git") == 6
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+                filesAmount(anotherSynchronizedRepoFolder, "\\.git") == 6
+            }
             new File("$anotherSynchronizedRepoFolder/$folder1File0.name").text.endsWith(TRA)
-            new File("$anotherSynchronizedRepoFolder/$folder1File.name").text.endsWith(BLA)
+            new File("$anotherSynchronizedRepoFolder/$folder1File1.name").text.endsWith(BLA)
             new File("$anotherSynchronizedRepoFolder/$folder1FolderFile3.name").exists()
             new File("$anotherSynchronizedRepoFolder/$folder1FolderFile4.name").exists()
             new File("$anotherSynchronizedRepoFolder/$folder2File.name").text.endsWith(BAR)
             new File("$anotherSynchronizedRepoFolder/$folder2FolderFile2.name").exists()
 
         when: "app is started watching paths which contains files with duplicated filename"
-            CompletableFuture<Boolean> appStarted3 = new CompletableFuture<>()
-            executor.submit(() -> {
-                try {
-                    GitSynchronizerApplication.main(
-                            "-p", "$folder1.path,$folderWithDuplicates.path",
-                            "-g", GIT_REMOTE.value,
-                            "-b", newBranch.value,
-                            "-r", anotherSynchronizedRepoFolder2.getAbsolutePath(),
-                            "-n", gitServerNetwork)
-                    appStarted3.complete(true)
-                }
-                catch (Throwable t) {
-                    appStarted3.completeExceptionally(t)
-                }
-                return appStarted3
-            })
+            CompletableFuture<Boolean> appStarted3 =
+                    starApplication(executor, newBranch, "$folder1.path,$folderWithDuplicates.path", anotherSynchronizedRepoFolder2)
         then: "app shouldn't start"
-            new PollingConditions(timeout: 15).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
                 appStarted3.isCompletedExceptionally()
             }
+    }
+
+    private static CompletableFuture<Boolean> starApplication(ExecutorService executor, newBranch, String path, File synchronizedRepoFolder) {
+        CompletableFuture<Boolean> appStarted = new CompletableFuture<>()
+        executor.submit(() -> {
+            try {
+                GitSynchronizerApplication.main(
+                        "-p", path,
+                        "-g", GIT_REMOTE.value,
+                        "-b", newBranch.value,
+                        "-r", synchronizedRepoFolder.getAbsolutePath(),
+                        "-n", gitServerNetwork)
+                appStarted.complete(true)
+            }
+            catch (Throwable t) {
+                appStarted.completeExceptionally(t)
+            }
+            return appStarted
+        })
+        return appStarted
     }
 
     static def filesAmount(File file, String excludedPattern = null) {

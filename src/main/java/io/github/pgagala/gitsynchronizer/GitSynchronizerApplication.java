@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -25,22 +26,10 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class GitSynchronizerApplication {
-    // paths to listening on defined via args to main, commit interval as well. SSH should be earlier set up.
-    // recognize if something is file or folder path.toFile().isFile()
-    // watching on windows available only on folder lvl - check linux
-    // 2 threads - one gathering and flatting changes to queue(getting rid of 2 events after modifying one file - one modified timestamp, seconds
-    // modified content)
-    // second committing and removing changes from queue with defined intervals to repo (parameter to be configured)
-
-    //repo on remote should be manually set up to application we should only pass repo identifiers,
-    //app should copy watched files to local repo and committing straight to remote repo, after app shutdown local repo should be
-    //removed ? (depends on option maybe)
-
-    //if nothing is on remote repo all watched files on start should be copied to that repo (synchronization although will be make
-    // only after updating watched file)
 
     @SuppressWarnings("java:S3655")
     public static void main(String[] args) throws IOException, InterruptedException {
+        Docker.buildDockerGitImageOrThrowException();
         GitSynchronizerApplicationArgsParser appArgs = new GitSynchronizerApplicationArgsParser(args);
         printStartMsg(appArgs);
 
@@ -123,6 +112,7 @@ public class GitSynchronizerApplication {
             return applicationArgs.gitBranch != null ? new GitBranch(applicationArgs.gitBranch) : GitBranch.DEFAULT_BRANCH;
         }
 
+        //TODO check if ignoring can be disabled
         List<Pattern> ignoredFilesPattern() {
             return applicationArgs.ignoredPattern != null ? applicationArgs.ignoredPattern :
                 List.of(Pattern.compile(IgnoredFiles.INTERMEDIATE_FILES_PATTERN));
@@ -171,7 +161,8 @@ public class GitSynchronizerApplication {
 
             @Parameter(
                 names = {"--ignoredPattern", "-i"},
-                description = "Ignored file pattern  (e.g. --ignoredPattern ^bla.*$ ^foo.*bar$). Default is " + IgnoredFiles.INTERMEDIATE_FILES_PATTERN,
+                description =
+                    "Ignored file pattern  (e.g. --ignoredPattern ^bla.*$ ^foo.*bar$). Default is " + IgnoredFiles.INTERMEDIATE_FILES_PATTERN,
                 converter = IgnoredPatternConverter.class,
                 validateWith = IgnoredPatternValidator.class
             )
@@ -205,13 +196,18 @@ public class GitSynchronizerApplication {
 
     public static class PathValidator implements IParameterValidator {
 
-        private static final String PATH = "^(/[^/ ]*)+/?$";
-
         @Override
         public void validate(String name, String value) {
-//            if (!value.matches(PATH)) {
-//                throw new ParameterException("Passed path doesn't follow pattern: " + PATH);
-//            }
+            try {
+                boolean allAbsolutes = Arrays.stream(value.split(","))
+                    .map(Path::of)
+                    .allMatch(Path::isAbsolute);
+                if (!allAbsolutes) {
+                    throw new ParameterException("Passed path isn't absolute path: " + value);
+                }
+            } catch (RuntimeException exc) {
+                throw new ParameterException("Passed path isn't parsable: " + value);
+            }
         }
     }
 

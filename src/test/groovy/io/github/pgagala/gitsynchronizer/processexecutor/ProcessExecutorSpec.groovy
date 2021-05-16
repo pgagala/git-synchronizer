@@ -2,7 +2,9 @@ package io.github.pgagala.gitsynchronizer.processexecutor
 
 
 import org.apache.commons.io.FileUtils
+import spock.lang.Requires
 import spock.lang.Specification
+import spock.util.environment.OperatingSystem
 
 import java.nio.file.Files
 
@@ -38,14 +40,30 @@ class ProcessExecutorSpec extends Specification {
             ["ls -b"]         | "wrong argument"
     }
 
-    def "Executed process should return proper response"() {
+    @Requires({ OperatingSystem.getCurrent().isWindows() })
+    def "Executed process should return proper response (windows)"() {
         given: "File foo in test folder"
             def file = new File("${testFolder.getAbsolutePath()}/foo")
             assert !file.exists()
             file.createNewFile()
 
         when: "`ls` command is executed"
-            def response = processExecutor.execute(["ls"], "ls commands")
+            def response = processExecutor.execute(["cmd.exe", "/c", "dir"], "dir commands")
+
+        then: "File foo should be listed"
+            response.isSuccessful()
+            response.result().contains("foo")
+    }
+
+    @Requires({ !OperatingSystem.getCurrent().isWindows() })
+    def "Executed process should return proper response (unix)"() {
+        given: "File foo in test folder"
+            def file = new File("${testFolder.getAbsolutePath()}/foo")
+            assert !file.exists()
+            file.createNewFile()
+
+        when: "`ls` command is executed"
+            def response = processExecutor.execute(["dir"], "ls commands")
 
         then: "File foo should be listed"
             response.isSuccessful()

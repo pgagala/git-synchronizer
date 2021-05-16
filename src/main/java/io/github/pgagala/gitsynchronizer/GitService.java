@@ -27,13 +27,12 @@ import static java.util.List.of;
  */
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Slf4j
-//TODO run integration tests on windows os as well
-class GitService {
+public class GitService {
 
     private static final String DOCKER = "docker";
     private static final List<String> dockerGitInvocationPrefixWithNetwork = of(DOCKER, "run", "--rm", "--network");
     private static final List<String> dockerGitInvocationPrefix = of(DOCKER, "run", "--rm");
-    private static final List<String> dockerGitInvocationSuffix = of("-v", getUserHome() + File.separator + ".ssh:/home/git-user/.ssh", "alpine/git:user");
+    private static final List<String> dockerGitInvocationSuffix = of("-v", Environment.getUserHome() + File.separator + ".ssh:/home/git-user/.ssh", "git");
     private static final String ORIGIN = "origin";
     List<String> dockerGitInvocationCommand;
     File gitRepositoryLocalFile;
@@ -41,7 +40,7 @@ class GitService {
     GitBranch gitBranch;
     ProcessExecutor processExecutor;
 
-    GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch) {
+    public GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch) {
         this.gitRepositoryLocalFile = repositoryLocal.getValue();
         this.gitServerRemote = serverRemote;
         this.gitBranch = gitBranch;
@@ -52,13 +51,7 @@ class GitService {
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    private static String getUserHome() {
-        return System.getenv("OS").startsWith("Windows") ?
-            System.getenv("USERPROFILE") :
-            System.getenv("HOME");
-    }
-
-    GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch, String gitServerNetwork) {
+    public GitService(GitServerRemote serverRemote, GitRepositoryLocal repositoryLocal, GitBranch gitBranch, String gitServerNetwork) {
         this.gitRepositoryLocalFile = repositoryLocal.getValue();
         this.gitServerRemote = serverRemote;
         this.gitBranch = gitBranch;
@@ -99,6 +92,11 @@ class GitService {
     private Response createNewBranchAndSwitch() throws InterruptedException {
         List<String> createNewBranchAndSwitch = getDockerGitCommandForLocalExecution(of("checkout", "-b", gitBranch.getValue()));
         return processExecutor.execute(createNewBranchAndSwitch, "git checkout -b");
+    }
+
+    private Response setFilemode() throws InterruptedException {
+        List<String> filemode = getDockerGitCommandForLocalExecution(of("config", "core.filemode", "false"));
+        return processExecutor.execute(filemode, "git config core.filemode false");
     }
 
     private Response addRemote() throws InterruptedException {

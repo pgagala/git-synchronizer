@@ -1,6 +1,6 @@
 package io.github.pgagala.gitsynchronizer
 
-import io.github.pgagala.gitsynchronizer.processexecutor.ProcessExecutor
+import groovy.util.logging.Slf4j
 import org.apache.commons.io.FileUtils
 import spock.lang.Timeout
 
@@ -9,26 +9,30 @@ import java.util.concurrent.TimeUnit
 
 import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic
 
-@Timeout(value = 2, unit = TimeUnit.MINUTES)
+@Timeout(value = 3, unit = TimeUnit.MINUTES)
 @SuppressWarnings("GroovyAccessibility")
+@Slf4j
 class GitServiceIntegrationSpec extends IntegrationSpec {
 
+    public static final String SEPARATOR = File.separator
     public static final GitServerRemote GIT_REMOTE = new GitServerRemote("http://$gitServerIp/test_repository.git")
 
     File testFolder
     FileManager fileManager
-    ProcessExecutor processExecutor
 
     def setup() {
         def testRepoFolderName = "test_repo_" + randomAlphabetic(4)
         testFolder = Files.createTempDirectory(testRepoFolderName).toFile()
         fileManager = new FileManager(testRepoFolderName)
-        processExecutor = new ProcessExecutor(testFolder)
     }
 
     def cleanup() {
-        if (testFolder.exists()) {
-            FileUtils.forceDelete(testFolder)
+        try {
+            if (testFolder.exists()) {
+                FileUtils.forceDelete(testFolder)
+            }
+        }
+        catch (Throwable ignored) {
         }
     }
 
@@ -40,12 +44,14 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
             gitService.createRepository()
 
         then: "Git repository exists"
+        log.info("files before: " + testFolder.listFiles())
             testFolder.listFiles().any { it.getName() == '.git' }
 
         when: "Git repository is removed"
             gitService.deleteRepository()
 
         then: "Git repository doesn't exist"
+        log.info("files after: " + testFolder.listFiles())
             testFolder.listFiles() == null
     }
 
@@ -122,9 +128,9 @@ class GitServiceIntegrationSpec extends IntegrationSpec {
     }
 
     private boolean assertGitLogContains(File file, String logEvent, GitBranch branch = GitBranch.DEFAULT_BRANCH) {
-        processExecutor.execute(["cat", "${testFolder.getAbsolutePath()}/.git/logs/refs/heads/$branch.value".toString()], "cat file")
-                .result()
-                .contains("File $logEvent: ${file.getAbsolutePath()}")
+        def path = "${SEPARATOR}.git${SEPARATOR}logs${SEPARATOR}refs${SEPARATOR}heads${SEPARATOR}$branch.value"
+        Files.readString(new File("${testFolder.getAbsolutePath()}$path").toPath())
+            .contains("File $logEvent: ${file.getAbsolutePath()}")
     }
 
 }

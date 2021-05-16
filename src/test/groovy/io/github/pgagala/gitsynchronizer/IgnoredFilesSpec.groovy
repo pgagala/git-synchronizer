@@ -19,11 +19,12 @@ class IgnoredFilesSpec extends Specification implements FileChangesSampleData {
             } != null
 
         where:
-            incomingEvents                                                                                                              | expectedEventsListAfterRemoval
-            []                                                                                                                          | []
-            [eventCreate(".file2.swp"), eventModify(".file2.swpx"), eventCreate(".~file2"), eventCreate("~file3")]                      | [eventCreate("~file3")]
-            [eventCreate(".file2.sw"), eventModify(".file2.sw2"), eventModify(".~file2"), eventModify("file3"), eventDelete(".~file2")] | [eventModify("file3")]
-            [eventCreate("file1"), eventCreate(".file2.swp"), eventModify(".file2.swpx"), eventDelete(".file3.swpx")]                   | [eventCreate("file1")]
+            incomingEvents                                                                                                                | expectedEventsListAfterRemoval
+            []                                                                                                                            | []
+            [eventCreate(".file2.swp"), eventModify(".file2.swpx"), eventCreate(".~file2"), eventCreate("~file3"), eventModify("file3~")] | [eventCreate("~file3")]
+            [eventCreate(".file2.sw"), eventModify(".file2.sw2"), eventModify(".~file2"), eventModify("file3"), eventDelete(".~file2")]   | [eventModify("file3")]
+            [eventCreate("file1"), eventCreate(".file2.swp"), eventModify(".file2.swpx"), eventDelete(".file3.swpx")]                     | [eventCreate("file1")]
+            [eventCreate("file1"), eventCreate("4913"), eventDelete("4913"), eventCreate("5222"), eventDelete("5232")]                    | [eventCreate("file1")]
     }
 
     def "no events should be ignored"() {

@@ -1,5 +1,6 @@
 package io.github.pgagala.gitsynchronizer
 
+
 import org.testcontainers.containers.DockerComposeContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import spock.lang.Specification
@@ -13,7 +14,8 @@ abstract class IntegrationSpec extends Specification {
     protected static final String gitServerNetwork
 
     static {
-        dockerComposeContainer = new DockerComposeContainer(new File("gitserver/docker-compose.yaml"))
+        Docker.buildDockerGitImageOrThrowException()
+        dockerComposeContainer = new DockerComposeContainer(new File("./docker/gitserver/docker-compose.yaml"))
                 .withBuild(true)
                 .withServices("git-server")
                 .withExposedService("git-server", 80)
@@ -28,5 +30,4 @@ abstract class IntegrationSpec extends Specification {
         gitServerIp = network.value.ipAddress
         gitServerNetwork = network.key
     }
-
 }
