@@ -5,12 +5,14 @@ import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.beust.jcommander.StringKey;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,9 +30,12 @@ import java.util.stream.Collectors;
 public class GitSynchronizerApplication {
 
     @SuppressWarnings("java:S3655")
-    public static void main(String[] args) throws IOException, InterruptedException {
-        Docker.buildDockerGitImageOrThrowException();
+    public static void main(String[] args) throws IOException, InterruptedException, URISyntaxException {
         GitSynchronizerApplicationArgsParser appArgs = new GitSynchronizerApplicationArgsParser(args);
+        if(appArgs.applicationArgs.help) {
+            return;
+        }
+        Docker.buildDockerGitImageOrThrowException();
         printStartMsg(appArgs);
 
         GitRepositoryLocal gitRepositoryLocal = appArgs.repositoryLocal();
@@ -78,13 +83,30 @@ public class GitSynchronizerApplication {
 
     private static class GitSynchronizerApplicationArgsParser {
 
+        private static final String HELP = "--help";
         private final ApplicationArgs applicationArgs = new ApplicationArgs();
 
-        GitSynchronizerApplicationArgsParser(@NonNull String[] args) {
+        GitSynchronizerApplicationArgsParser(@NonNull String[] args) throws URISyntaxException {
+            String executionSource =
+                new File(GitSynchronizerApplication.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getAbsolutePath();
             JCommander cmd = JCommander.newBuilder()
                 .addObject(applicationArgs)
+                .programName("java -jar " + executionSource)
                 .build();
-            cmd.parse(args);
+            parse(args, cmd);
+        }
+
+        private void parse(@NonNull String[] args, JCommander cmd) {
+            try {
+                cmd.parse(args);
+            } catch (ParameterException exception) {
+                log.error("Application invoked with invalid arguments: {}.", (Object) args);
+                cmd.usage();
+                throw exception;
+            }
+            if(cmd.getDescriptions().get(new StringKey(HELP)).isAssigned()) {
+                cmd.usage();
+            }
         }
 
         GitServerRemote serverRemote() {
@@ -112,24 +134,25 @@ public class GitSynchronizerApplication {
             return applicationArgs.gitBranch != null ? new GitBranch(applicationArgs.gitBranch) : GitBranch.DEFAULT_BRANCH;
         }
 
-        //TODO check if ignoring can be disabled
         IgnoredFiles ignoredFilesPattern() {
             return applicationArgs.ignoredPattern != null ? IgnoredFiles.from(applicationArgs.ignoredPattern) :
                 IgnoredFiles.intermediateIgnoredFiles();
         }
-
 
         Optional<String> network() {
             return applicationArgs.network != null ? Optional.of(applicationArgs.network) : Optional.empty();
         }
 
         private static class ApplicationArgs {
+
+            @Parameter(names = {HELP, "--h"}, help = true)
+            private boolean help;
+
             @Parameter(
                 names = {"--gitServerRemote", "-g"},
                 required = true,
                 arity = 1,
-                description = "Git server remote where backup of file changes should be stored (e.g. --gitServerRemote git@github" +
-                    ".com:pgagala/git-synchronizer.git)",
+                description = "Git server remote where backup of file changes should be stored (e.g. --gitServerRemote git@github.com:pgagala/git-synchronizer.git)",
                 validateWith = GitServerRemoteValidator.class
             )
             private String gitServerRemote;
@@ -139,16 +162,18 @@ public class GitSynchronizerApplication {
                 required = true,
                 converter = PathConverter.class,
                 validateWith = PathValidator.class,
-                description = "Paths with files which should be monitored (e.g. for unix: \"--paths /home/myDirToMonitor,/home/mySecondDirToMonitor\" and for windows: " +
-                    "\"--paths C:\\myDirToMonitor,C:\\mySecondDirToMonitor\""
+                description = """
+                    Paths with files which should be monitored (e.g. for unix: "--paths /home/myDirToMonitor,/home/mySecondDirToMonitor" and for windows: \
+                    --paths C:\\myDirToMonitor,C:\\mySecondDirToMonitor"""
             )
             private List<Path> paths;
 
             @Parameter(
                 names = {"--repositoryPath", "-r"},
                 arity = 1,
-                description = "Repository path under which backup of file changes should be stored (e.g. --repositoryPath /tmp/mySynchronizedRepo)." +
-                    " Default is somewhere in operating system's tmp folder",
+                description = """
+                    Repository path under which backup of file changes should be stored (e.g. --repositoryPath /tmp/mySynchronizedRepo).\
+                    Default is somewhere in operating system's tmp folder""",
                 validateWith = PathValidator.class
             )
             private String gitRepositoryPath;
@@ -162,8 +187,9 @@ public class GitSynchronizerApplication {
 
             @Parameter(
                 names = {"--ignoredPattern", "-i"},
-                description =
-                    "Ignored file pattern  (e.g. --ignoredPattern ^bla.*$ ^foo.*bar$). Default is " + IgnoredFiles.INTERMEDIATE_FILES_PATTERN,
+                description = """
+                    Ignored file pattern  (e.g. --ignoredPattern ^bla.*$,^foo.*bar$). Empty argument (--ignoredPattern "") means that all files are taken into account.\
+                     Default is %s""" + IgnoredFiles.INTERMEDIATE_FILES_PATTERN,
                 converter = IgnoredPatternConverter.class,
                 validateWith = IgnoredPatternValidator.class
             )

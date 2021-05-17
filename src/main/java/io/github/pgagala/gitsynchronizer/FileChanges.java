@@ -27,7 +27,6 @@ class FileChanges implements Iterable<FileChange> {
         this.changes = Collections.unmodifiableList(changes);
     }
 
-    //TODO check if unmodifable
     @Override
     public @NotNull Iterator<FileChange> iterator() {
         return changes.iterator();

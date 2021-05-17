@@ -2,7 +2,6 @@ package io.github.pgagala.gitsynchronizer;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 
 import java.io.File;
@@ -14,7 +13,6 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-@ToString
 @SuppressWarnings("java:S1452")
 class IgnoredFiles {
 
@@ -52,5 +50,10 @@ class IgnoredFiles {
         return copiedWatchEvents.stream()
             .filter(e -> ignoredFilePatterns.stream().noneMatch(p -> p.matcher(e.context().toString()).matches()))
             .collect(Collectors.toUnmodifiableList());
+    }
+
+    @Override
+    public String toString() {
+        return String.join(",", ignoredFilePatterns.stream().map(Pattern::toString).collect(Collectors.toUnmodifiableList()));
     }
 }

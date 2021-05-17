@@ -99,7 +99,6 @@ public class GitService {
         return processExecutor.execute(addingRemoteCommand, format("git adding remote %s", gitServerRemote));
     }
 
-    //TODO throw or stay with response ?
     Response deleteRepository() {
         try {
             if (!gitRepositoryLocalFile.exists()) {
