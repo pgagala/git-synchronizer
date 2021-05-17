@@ -66,8 +66,7 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
                 }
             }], { f -> [FILE1, FILE1] }, IgnoredFiles.noIgnoredFiles())
         then: "exception should be thrown"
-//            thrown DuplicatedWatchedFileException
-        noExceptionThrown()
+            thrown DuplicatedWatchedFileException
     }
 
     def "events correspond to ignored file patterns should be ignored during files watching"() {
