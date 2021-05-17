@@ -170,6 +170,7 @@ class FileWatcher {
         return new FileChanges(flattenFileChanges(changes));
     }
 
+    @SuppressWarnings("java:S3864")
     private List<FileChange> toFileChanges(List<WatchEvent<?>> events, Path path) {
         return events
             .stream()

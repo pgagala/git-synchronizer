@@ -164,7 +164,7 @@ public class GitSynchronizerApplication {
                 validateWith = PathValidator.class,
                 description = """
                     Paths with files which should be monitored (e.g. for unix: "--paths /home/myDirToMonitor,/home/mySecondDirToMonitor" and for windows: \
-                    --paths C:\\myDirToMonitor,C:\\mySecondDirToMonitor"""
+                    "--paths C:\\myDirToMonitor,C:\\mySecondDirToMonitor" """
             )
             private List<Path> paths;
 

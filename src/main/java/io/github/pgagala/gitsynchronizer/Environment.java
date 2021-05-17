@@ -1,7 +1,11 @@
 package io.github.pgagala.gitsynchronizer;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+
 import java.util.Map;
 
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 class Environment {
     static String getUserHome() {
         String osName = System.getenv().entrySet()
