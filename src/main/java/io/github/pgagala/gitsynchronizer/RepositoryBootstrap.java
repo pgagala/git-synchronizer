@@ -9,7 +9,7 @@ import java.io.IOException;
 
 /**
  * Initializing local repository synchronized with remote repository.
- * Take care about cleaning repository before initialization
+ * Take care about cleaning repository before initialization.
  *
  * @author Paweł Gągała
  */

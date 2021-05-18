@@ -23,7 +23,7 @@ import static java.lang.String.format;
 import static java.util.List.of;
 
 /**
- * Creating/destroying temporary git repository (point of file synchronization with remote). Using docker to run git commands.
+ * Creating/destroying temporary local git repository (point of file synchronization with remote repository). Using docker to run git commands.
  *
  * @author Paweł Gągała
  */

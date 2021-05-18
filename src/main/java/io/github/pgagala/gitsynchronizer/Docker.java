@@ -10,7 +10,7 @@ import java.io.File;
 import java.util.List;
 
 /**
- * Building docker images used in application
+ * Building docker images used in application.
  *
  * @author Paweł Gągała
  */

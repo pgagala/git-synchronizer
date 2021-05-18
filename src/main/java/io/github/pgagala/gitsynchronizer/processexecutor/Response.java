@@ -8,7 +8,7 @@ import lombok.experimental.FieldDefaults;
 import java.util.Arrays;
 
 /**
- * Representation of execution output of {@link ProcessExecutor}
+ * Representation of execution output of {@link ProcessExecutor}.
  *
  * @author Paweł Gągała
  */

@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import static java.lang.String.format;
 
 /**
- * Represents file changes in system
+ * Represents file changes in system.
  *
  * @author Paweł Gągała
  */
@@ -57,7 +57,7 @@ class FileChanges implements Iterable<FileChange> {
 }
 
 /**
- * Abstraction for file change in system
+ * Abstraction for file change in system.
  *
  * @author Paweł Gągała
  */
@@ -70,7 +70,7 @@ interface FileChange {
 
 /**
  * If any files from local files is changed or new relative to synchronized remote repository state on application startup,
- * then all files from local will be treated as initialized files.
+ * then all files from local will be treated as initialized files during application startup.
  *
  * @author Paweł Gągała
  */
@@ -98,7 +98,7 @@ class FileInitialized implements FileChange {
 }
 
 /**
- * File creation in filesystem
+ * Indicates file was created in filesystem.
  *
  * @author Paweł Gągała
  */
@@ -126,7 +126,7 @@ class FileCreated implements FileChange {
 }
 
 /**
- * File modification in filesystem
+ * Indicates file was modified in filesystem.
  *
  * @author Paweł Gągała
  */
@@ -154,7 +154,7 @@ class FileModified implements FileChange {
 }
 
 /**
- * File deletion in filesystem
+ * Indicates file was deleted in filesystem.
  *
  * @author Paweł Gągała
  */

@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import static java.lang.String.format;
 
 /**
- * Collecting file change events regularly via {@link FileWatcher#occurredFileChanges()}.
+ * Collecting file change events in loop via {@link FileWatcher#occurredFileChanges()}.
  * Collected file change events are transformed to files, copied to synchronized local repository and
  * committed to remote repository.
  *

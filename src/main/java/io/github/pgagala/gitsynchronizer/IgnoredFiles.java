@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Representation of ignored files
+ * Representation of ignored files.
  *
  * @author Paweł Gągała
  */

@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.Map;
 
 /**
- * Provides convenient access for environment variables
+ * Provides convenient access for environment variables.
  *
  * @author Paweł Gągała
  */

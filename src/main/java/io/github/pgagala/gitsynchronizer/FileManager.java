@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Copying/removing files to/from specific path
+ * Copying/removing files to/from specific path.
  *
  * @author Paweł Gągała
  */

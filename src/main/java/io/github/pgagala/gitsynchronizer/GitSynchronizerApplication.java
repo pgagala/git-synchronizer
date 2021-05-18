@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Entrypoint for git synchronizer application
+ * Entrypoint for git synchronizer application.
  *
  * @author Paweł Gągała
  */
@@ -159,8 +159,7 @@ public class GitSynchronizerApplication {
                 names = {"--gitServerRemote", "-g"},
                 required = true,
                 arity = 1,
-                description = "Git server remote where backup of file changes should be stored (e.g. --gitServerRemote git@github" +
-                    ".com:pgagala/git-synchronizer.git)",
+                description = "Git server remote where backup of file changes should be stored (e.g. --gitServerRemote git@github.com:pgagala/git-synchronizer.git)",
                 validateWith = GitServerRemoteValidator.class
             )
             private String gitServerRemote;

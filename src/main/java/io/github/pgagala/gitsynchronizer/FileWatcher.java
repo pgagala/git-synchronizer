@@ -35,7 +35,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 /**
- * Watches file change events in loop and collects them inside queue
+ * Watches file change events in loop and collects them in queue.
  *
  * @author Paweł Gągała
  */

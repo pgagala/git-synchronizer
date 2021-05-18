@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 import static java.lang.String.format;
 
 /**
- * Executes command line processes
+ * Executes command line processes.
  *
  * @author Paweł Gągała
  */
