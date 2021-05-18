@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldDefaults;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Collections;
@@ -33,7 +32,7 @@ class FileChanges implements Iterable<FileChange> {
     }
 
     @Override
-    public @NotNull Iterator<FileChange> iterator() {
+    public Iterator<FileChange> iterator() {
         return changes.iterator();
     }
 

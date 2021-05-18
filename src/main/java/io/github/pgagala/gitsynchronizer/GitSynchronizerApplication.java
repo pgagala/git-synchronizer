@@ -40,7 +40,7 @@ public class GitSynchronizerApplication {
         if (appArgs.applicationArgs.help) {
             return;
         }
-        Docker.buildDockerGitImageOrThrowException();
+        Docker.pullDockerGitImageOrThrowException();
         printStartMsg(appArgs);
 
         GitRepositoryLocal gitRepositoryLocal = appArgs.repositoryLocal();

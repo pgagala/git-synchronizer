@@ -86,14 +86,15 @@ public class ProcessExecutor {
     }
 
     private StringBuilder getResponseBuilder(Process process) throws IOException {
-        BufferedReader reader =
-            new BufferedReader(new InputStreamReader(process.getInputStream()));
-        StringBuilder builder = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            builder.append(line);
-            builder.append(LINE_SEPARATOR);
+        try (BufferedReader reader =
+                 new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+            StringBuilder builder = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+                builder.append(LINE_SEPARATOR);
+            }
+            return builder;
         }
-        return builder;
     }
 }
