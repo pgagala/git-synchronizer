@@ -26,13 +26,16 @@ import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Entrypoint for git synchronizer application
+ */
 @Slf4j
 public class GitSynchronizerApplication {
 
     @SuppressWarnings("java:S3655")
     public static void main(String[] args) throws IOException, InterruptedException, URISyntaxException {
         GitSynchronizerApplicationArgsParser appArgs = new GitSynchronizerApplicationArgsParser(args);
-        if(appArgs.applicationArgs.help) {
+        if (appArgs.applicationArgs.help) {
             return;
         }
         Docker.buildDockerGitImageOrThrowException();
@@ -104,7 +107,7 @@ public class GitSynchronizerApplication {
                 cmd.usage();
                 throw exception;
             }
-            if(cmd.getDescriptions().get(new StringKey(HELP)).isAssigned()) {
+            if (cmd.getDescriptions().get(new StringKey(HELP)).isAssigned()) {
                 cmd.usage();
             }
         }
@@ -145,14 +148,17 @@ public class GitSynchronizerApplication {
 
         private static class ApplicationArgs {
 
-            @Parameter(names = {HELP, "--h"}, help = true)
+            @Parameter(names = {HELP, "--h"},
+                help = true,
+                description = "Displaying help description")
             private boolean help;
 
             @Parameter(
                 names = {"--gitServerRemote", "-g"},
                 required = true,
                 arity = 1,
-                description = "Git server remote where backup of file changes should be stored (e.g. --gitServerRemote git@github.com:pgagala/git-synchronizer.git)",
+                description = "Git server remote where backup of file changes should be stored (e.g. --gitServerRemote git@github" +
+                    ".com:pgagala/git-synchronizer.git)",
                 validateWith = GitServerRemoteValidator.class
             )
             private String gitServerRemote;
@@ -189,7 +195,7 @@ public class GitSynchronizerApplication {
                 names = {"--ignoredPattern", "-i"},
                 description = """
                     Ignored file pattern  (e.g. --ignoredPattern ^bla.*$,^foo.*bar$). Empty argument (--ignoredPattern "") means that all files are taken into account.\
-                     Default is %s""" + IgnoredFiles.INTERMEDIATE_FILES_PATTERN,
+                    Default is %s""" + IgnoredFiles.INTERMEDIATE_FILES_PATTERN,
                 converter = IgnoredPatternConverter.class,
                 validateWith = IgnoredPatternValidator.class
             )

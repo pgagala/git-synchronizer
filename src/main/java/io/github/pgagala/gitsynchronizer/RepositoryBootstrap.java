@@ -7,6 +7,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
+/**
+ * Initializing local repository synchronized with remote repository.
+ * Take care about cleaning repository before initialization
+ */
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Slf4j

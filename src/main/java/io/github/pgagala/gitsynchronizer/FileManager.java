@@ -10,6 +10,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Copying/removing files to/from specific path
+ */
 @Slf4j
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
