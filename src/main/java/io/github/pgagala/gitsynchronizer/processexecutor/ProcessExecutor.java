@@ -17,6 +17,11 @@ import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 
+/**
+ * Executes command line processes
+ *
+ * @author Paweł Gągała
+ */
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Slf4j

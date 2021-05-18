@@ -24,6 +24,8 @@ import static java.util.List.of;
 
 /**
  * Creating/destroying temporary git repository (point of file synchronization with remote). Using docker to run git commands.
+ *
+ * @author Paweł Gągała
  */
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Slf4j

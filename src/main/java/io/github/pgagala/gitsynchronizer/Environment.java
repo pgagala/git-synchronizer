@@ -5,6 +5,11 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
 
+/**
+ * Provides convenient access for environment variables
+ *
+ * @author Paweł Gągała
+ */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 class Environment {
     static String getUserHome() {

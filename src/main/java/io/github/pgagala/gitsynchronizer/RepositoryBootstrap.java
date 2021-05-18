@@ -10,6 +10,8 @@ import java.io.IOException;
 /**
  * Initializing local repository synchronized with remote repository.
  * Take care about cleaning repository before initialization
+ *
+ * @author Paweł Gągała
  */
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)

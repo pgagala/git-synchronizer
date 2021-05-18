@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 
 /**
  * Entrypoint for git synchronizer application
+ *
+ * @author Paweł Gągała
  */
 @Slf4j
 public class GitSynchronizerApplication {

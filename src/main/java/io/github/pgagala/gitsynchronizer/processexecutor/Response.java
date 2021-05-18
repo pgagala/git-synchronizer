@@ -7,6 +7,11 @@ import lombok.experimental.FieldDefaults;
 
 import java.util.Arrays;
 
+/**
+ * Representation of execution output of {@link ProcessExecutor}
+ *
+ * @author Paweł Gągała
+ */
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @ToString

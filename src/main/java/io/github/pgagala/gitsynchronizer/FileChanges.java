@@ -17,6 +17,11 @@ import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
+/**
+ * Represents file changes in system
+ *
+ * @author Paweł Gągała
+ */
 @ToString
 @EqualsAndHashCode
 class FileChanges implements Iterable<FileChange> {
@@ -51,6 +56,11 @@ class FileChanges implements Iterable<FileChange> {
     }
 }
 
+/**
+ * Abstraction for file change in system
+ *
+ * @author Paweł Gągała
+ */
 interface FileChange {
     File file();
     default boolean connectedWithRemoval() {
@@ -58,29 +68,12 @@ interface FileChange {
     }
 }
 
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@Accessors(fluent = true)
-class FileModified implements FileChange {
-
-    static FileModified of(File file) {
-        return new FileModified(file, file.getName());
-    }
-
-    @Getter
-    File file;
-
-    @Getter
-    @EqualsAndHashCode.Include
-    String fileName;
-
-    @Override
-    public String toString() {
-        return format("File changed: %s", file.getAbsolutePath());
-    }
-}
-
+/**
+ * If any files from local files is changed or new relative to synchronized remote repository state on application startup,
+ * then all files from local will be treated as initialized files.
+ *
+ * @author Paweł Gągała
+ */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -104,6 +97,11 @@ class FileInitialized implements FileChange {
     }
 }
 
+/**
+ * File creation in filesystem
+ *
+ * @author Paweł Gągała
+ */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -127,6 +125,39 @@ class FileCreated implements FileChange {
     }
 }
 
+/**
+ * File modification in filesystem
+ *
+ * @author Paweł Gągała
+ */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Accessors(fluent = true)
+class FileModified implements FileChange {
+
+    static FileModified of(File file) {
+        return new FileModified(file, file.getName());
+    }
+
+    @Getter
+    File file;
+
+    @Getter
+    @EqualsAndHashCode.Include
+    String fileName;
+
+    @Override
+    public String toString() {
+        return format("File changed: %s", file.getAbsolutePath());
+    }
+}
+
+/**
+ * File deletion in filesystem
+ *
+ * @author Paweł Gągała
+ */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)

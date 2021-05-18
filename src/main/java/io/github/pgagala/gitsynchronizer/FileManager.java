@@ -12,6 +12,8 @@ import java.util.List;
 
 /**
  * Copying/removing files to/from specific path
+ *
+ * @author Paweł Gągała
  */
 @Slf4j
 @RequiredArgsConstructor

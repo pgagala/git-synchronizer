@@ -9,6 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.util.List;
 
+/**
+ * Building docker images used in application
+ *
+ * @author Paweł Gągała
+ */
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 class Docker {

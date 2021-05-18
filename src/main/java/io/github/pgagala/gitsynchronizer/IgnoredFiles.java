@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 
 /**
  * Representation of ignored files
+ *
+ * @author Paweł Gągała
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
