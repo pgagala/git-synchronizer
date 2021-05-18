@@ -21,7 +21,7 @@ folder _/A_ make that _/A/B_ will be synchronized as well.
 # How
 
 ## Requirements
-- java 15
+- java >= 15
 - docker
 
 ## Installation
