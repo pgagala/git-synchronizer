@@ -20,7 +20,7 @@ import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtil
 @SuppressWarnings(["GroovyAccessibility", "GroovyAssignabilityCheck"])
 class AcceptanceIntegrationSpec extends IntegrationSpec {
 
-    public static final int WAITING_IN_SEC = 15
+    public static final int WAITING_IN_SEC = 30
     public static final GitServerRemote GIT_REMOTE = new GitServerRemote("http://$gitServerIp/test_repository.git")
     public static final String BAR = "bar"
     public static final String FOO = "foo"
@@ -117,11 +117,11 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
                             "$folder1File1.path,$folder1Folder.path,$folder2File.path,$folder2Folder.path",
                             synchronizedRepoFolder)
         then: "app started"
-            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC, delay: 0.5).eventually {
                 appStarted.isDone() && !appStarted.isCompletedExceptionally()
             }
         and: "all files from watched folders are copied to local synchronized repository folder"
-            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC, delay: 0.5).eventually {
                 assert filesAmount(synchronizedRepoFolder, "\\.git") == 6
             }
 
@@ -130,7 +130,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         and: "folder1File is edited"
             folder1File1.append(BLA)
         then: "watched file is copied to synchronized repository"
-            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC, delay: 0.5).eventually {
                 new File("$synchronizedRepoFolder/$folder1File1.name").text.endsWith(BLA)
             }
         and: "non watched file is not copied"
@@ -139,14 +139,14 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         when: "folder1FolderFile2 is edited"
             folder1FolderFile2.append(FOO)
         then: "changed file is copied to synchronized repository"
-            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC, delay: 0.5).eventually {
                 new File("$synchronizedRepoFolder/$folder1FolderFile2.name").text.endsWith(FOO)
             }
 
         when: "folder1FolderFile2 is removed"
             folder1FolderFile2.delete()
         then: "file is deleted from synchronized repository. Last change is visible in git log"
-            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC, delay: 0.5).eventually {
                 !new File("$synchronizedRepoFolder/$folder1FolderFile2.name").exists() &&
                         testGitService.log().result()
                                 .contains("File deleted: $folder1FolderFile2")
@@ -155,21 +155,21 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
         when: "folder1FolderFile4 is added"
             folder1FolderFile4.createNewFile()
         then: "changed file is copied to synchronized repository"
-            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC, delay: 0.5).eventually {
                 new File("$synchronizedRepoFolder/$folder1FolderFile4.name").exists()
             }
 
         when: "folder2File is edited"
             folder2File.append(BAR)
         then: "changed file is copied to synchronized repository"
-            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC, delay: 0.5).eventually {
                 new File("$synchronizedRepoFolder/$folder2File.name").text.endsWith(BAR)
             }
 
         when: "folder2FolderFile3 is removed"
             folder2FolderFile3.delete()
         then: "file is deleted from synchronized repository. Last change is visible in git log"
-            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC, delay: 0.5).eventually {
                 !new File("$synchronizedRepoFolder/$folder2FolderFile3.name").exists() &&
                         testGitService.log().result()
                                 .contains("File deleted: $folder2FolderFile3")
@@ -179,11 +179,11 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
             CompletableFuture<Boolean> appStarted2 =
                     starApplication(executor, newBranch, "$folder1.path", anotherSynchronizedRepoFolder)
         then: "app started"
-            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC, delay: 0.5).eventually {
                 appStarted2.isDone() && !appStarted2.isCompletedExceptionally()
             }
         and: "another synchronized repository should has same files as synchronized repository"
-            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC, delay: 0.5).eventually {
                 filesAmount(anotherSynchronizedRepoFolder, "\\.git") == 6
             }
             new File("$anotherSynchronizedRepoFolder/$folder1File0.name").text.endsWith(TRA)
@@ -197,7 +197,7 @@ class AcceptanceIntegrationSpec extends IntegrationSpec {
             CompletableFuture<Boolean> appStarted3 =
                     starApplication(executor, newBranch, "$folder1.path,$folderWithDuplicates.path", anotherSynchronizedRepoFolder2)
         then: "app shouldn't start"
-            new PollingConditions(timeout: WAITING_IN_SEC).eventually {
+            new PollingConditions(timeout: WAITING_IN_SEC, delay: 0.5).eventually {
                 appStarted3.isCompletedExceptionally()
             }
     }
