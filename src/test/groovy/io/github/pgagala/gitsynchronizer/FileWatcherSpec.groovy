@@ -60,10 +60,7 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
 
     def "Exception should be thrown on file watcher start if there are any files in watched paths with same file name"() {
         when: "file watcher with duplicated files is created"
-        File f ;;
-        f.sha
             new FileWatcher(watchService, [Mock(Path) {
-
                 toFile() >> Mock(File) {
                     isFile() >> false
                 }
