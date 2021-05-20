@@ -5,7 +5,7 @@
 - needs docker, java > 15
 - requires 2 parameters - watched paths and link to repository (ssh key needs be added)
 - can be download from [git-synchronizer-1.0.0.jar](https://github.com/pgagala/git-synchronizer/releases/download/1.0.0/git-synchronizer-1.0.0.jar) 
-- run via `java -jar ./build/libs/git-synchronizer-1.0.0.jar -g git@gitlab.com:myFavGroup/synchronized-notes.git -p /home/pgagala/watched` 
+- run via `java -jar git-synchronizer-1.0.0.jar -g git@gitlab.com:myFavGroup/synchronized-notes.git -p /home/pgagala/watched,/home/pgagala/watched2/file` 
 
 # Why?
 Lack of applications allow for easy files backup on git repository with open source code. 
