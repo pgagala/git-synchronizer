@@ -59,7 +59,7 @@ Usage: java -jar /home/pgagala/IdeaProjects/git-synchronizer/build/libs/git-sync
     --ignoredPattern, -i
       Ignored file pattern  (e.g. --ignoredPattern ^bla.*$,^foo.*bar$). Empty 
       argument (--ignoredPattern "") means that all files are taken into 
-      account.Default is %s^(\..+\.sw.*|\.~.+|.+~)$
+      account.Default is ^(\..+\.sw.*|\.~.+|.+~)$
     --network, -n
       Optional docker network. Default is none
   * --paths, -p

@@ -196,7 +196,7 @@ public class GitSynchronizerApplication {
                 names = {"--ignoredPattern", "-i"},
                 description = """
                     Ignored file pattern  (e.g. --ignoredPattern ^bla.*$,^foo.*bar$). Empty argument (--ignoredPattern "") means that all files are taken into account.\
-                    Default is %s""" + IgnoredFiles.INTERMEDIATE_FILES_PATTERN,
+                    Default is """ + IgnoredFiles.INTERMEDIATE_FILES_PATTERN,
                 converter = IgnoredPatternConverter.class,
                 validateWith = IgnoredPatternValidator.class
             )
