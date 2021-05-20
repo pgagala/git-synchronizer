@@ -12,6 +12,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY
 
+@SuppressWarnings("GroovyAccessibility")
 class FileWatcherSpec extends Specification implements FileChangesSampleData {
 
     @Shared
@@ -101,7 +102,7 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
             [eventCreate(FILE1), eventCreate(FILE1), eventCreate(FILE2_SWP), eventModify(FILE2_SWPX)] | fileChanges([fileCreated(FILE1)])
     }
 
-    def "occurredFileChanges should returned events without duplication and any event kind in the company of delete event should be flattened to delete event"() {
+    def "occurredFileChanges should returned events without duplication and any event kind in the company of delete event should be flattened"() {
         given: "Watch service which returned particular events"
             WatchKey key = Mock(WatchKey) {
                 pollEvents() >> events
@@ -136,43 +137,18 @@ class FileWatcherSpec extends Specification implements FileChangesSampleData {
             [eventModify(FILE1), eventDelete(FILE2), eventCreate(FILE1), eventDelete(FILE2)]                     | fileChanges([fileModified(FILE1), fileDeleted(FILE2), fileCreated(FILE1)])
             [eventCreate(FILE1), eventDelete(FILE2), eventModify(FILE1), eventCreate(FILE1)]                     | fileChanges([fileCreated(FILE1), fileDeleted(FILE2), fileModified(FILE1)])
             [eventModify(FILE1), eventDelete(FILE1)]                                                             | fileChanges([fileDeleted(FILE1)])
-            [eventCreate(FILE1), eventDelete(FILE2), eventModify(FILE1), eventDelete(FILE2), eventDelete(FILE1)] | fileChanges([fileDeleted(FILE2), fileDeleted(FILE1)])
-    }
-
-    def "events deleting, creating and modifying referring to same file should be flattened to modify event (sequence of such events is a behaviour of editing e.g. via VIM)"() {
-        given: "Watch service which returned particular events"
-            WatchKey key = Mock(WatchKey) {
-                pollEvents() >> events
-            }
-            WatchService watchService = Mock(WatchService) {
-                take() >> key
-            }
-            def watchedPaths =
-                    [Mock(Path) {
-                        toString() >> "/"
-                        register(_ as WatchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE) >> key
-                        toFile() >> Mock(File) {
-                            isFile() >> false
-                        }
-                    }]
-            FileWatcher fileWatcher = new FileWatcher(watchService, watchedPaths, { f -> [] }, IgnoredFiles.noIgnoredFiles())
-
-        when: "File watcher is started"
-            fileWatcher.run()
-
-        then: "Events without duplication in correct order are returned"
-            new PollingConditions(timeout: 2).eventually {
-                assert fileWatcher.occurredFileChanges() == expectedFileChanges
-            }
-
-        where:
-            events                                                                           | expectedFileChanges
-            [eventDelete(FILE1), eventCreate(FILE1), eventModify(FILE1)]                     | fileChanges([fileModified(FILE1)])
-            [eventDelete(FILE1), eventModify(FILE2), eventCreate(FILE1), eventModify(FILE1)] | fileChanges([fileModified(FILE2), fileModified(FILE1)])
-            [eventDelete(FILE1), eventCreate(FILE1), eventCreate(FILE2), eventModify(FILE1)] | fileChanges([fileCreated(FILE2), fileModified(FILE1)])
-            [eventDelete(FILE1), eventCreate(FILE1), eventModify(FILE2), eventModify(FILE1)] | fileChanges([fileModified(FILE2), fileModified(FILE1)])
-            [eventDelete(FILE1), eventCreate(FILE1), eventDelete(FILE2), eventModify(FILE1)] | fileChanges([fileDeleted(FILE2), fileModified(FILE1)])
-            [eventCreate(FILE1), eventDelete(FILE1)]                                         | fileChanges([fileDeleted(FILE1)])
+            [eventCreate(FILE1), eventDelete(FILE2), eventModify(FILE1), eventDelete(FILE2), eventDelete(FILE1)] | fileChanges([fileDeleted(FILE2)])
+            [eventDelete(FILE1), eventCreate(FILE1), eventModify(FILE1)]                                         | fileChanges([fileCreated(FILE1), fileModified(FILE1)])
+            [eventDelete(FILE1), eventModify(FILE2), eventCreate(FILE1), eventModify(FILE1)]                     | fileChanges([fileModified(FILE2), fileCreated(FILE1), fileModified(FILE1)])
+            [eventDelete(FILE1), eventCreate(FILE1), eventCreate(FILE2), eventModify(FILE1)]                     | fileChanges([fileCreated(FILE1), fileCreated(FILE2), fileModified(FILE1)])
+            [eventDelete(FILE1), eventCreate(FILE1), eventModify(FILE2), eventModify(FILE1)]                     | fileChanges([fileCreated(FILE1), fileModified(FILE2), fileModified(FILE1)])
+            [eventDelete(FILE1), eventCreate(FILE1), eventDelete(FILE2), eventModify(FILE1)]                     | fileChanges([fileCreated(FILE1), fileDeleted(FILE2), fileModified(FILE1)])
+            [eventCreate(FILE1), eventDelete(FILE1)]                                                             | fileChanges([])
+            [eventDelete(FILE1), eventDelete(FILE2), eventCreate(FILE1)]                                         | fileChanges([fileDeleted(FILE2), fileCreated(FILE1)])
+            [eventDelete(FILE1), eventModify(FILE1)]                                                             | fileChanges([fileModified(FILE1)])
+            [eventDelete(FILE1), eventModify(FILE2), eventModify(FILE1)]                                         | fileChanges([fileModified(FILE2), fileModified(FILE1)])
+            [eventDelete(FILE1), eventCreate(FILE2), eventModify(FILE1)]                                         | fileChanges([fileCreated(FILE2), fileModified(FILE1)])
+            [eventDelete(FILE1), eventDelete(FILE2), eventModify(FILE1)]                                         | fileChanges([fileDeleted(FILE2), fileModified(FILE1)])
     }
 
     def "watching single file should be possible"() {

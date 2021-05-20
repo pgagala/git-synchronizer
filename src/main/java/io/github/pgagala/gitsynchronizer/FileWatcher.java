@@ -28,6 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
@@ -197,60 +198,63 @@ class FileWatcher {
             .collect(Collectors.toUnmodifiableList());
     }
 
-    Function<FileChange, Optional<Class<? extends FileChange>>> deleteCreateModifySeqMapper = f -> {
-        if (f.connectedWithRemoval()) {
-            return Optional.of(FileCreated.class);
-        }
-        if (f instanceof FileCreated) {
-            return Optional.of(FileModified.class);
-        }
-        return Optional.empty();
-    };
-
     private List<FileChange> flattenFileChanges(List<FileChange> fileChanges) {
         List<FileChange> uniqueFiles = new ArrayList<>();
-        Map<String, List<FileChange>> deleteCreateModifyFileSeq = new HashMap<>();
+
+        List<String> filenamesToCreate = new ArrayList<>();
+        List<String> filenamesToRemove = new ArrayList<>();
+
+        Map<String, List<FileChange>> filenameWithFileChanges = new HashMap<>();
 
         fileChanges.stream()
             .filter(f -> !uniqueFiles.contains(f))
             .forEach(f -> {
-                uniqueFiles.add(f);
-                if (f.connectedWithRemoval() && !deleteCreateModifyFileSeq.containsKey(f.file().getName())) {
-                    deleteCreateModifyFileSeq.put(f.file().getName(), List.of(f));
-                } else if (deleteCreateModifyFileSeq.containsKey(f.file().getName()))
-                {
-                    List<FileChange> seq = deleteCreateModifyFileSeq.get(f.file().getName());
-                    FileChange lastInSeq = seq.get(seq.size() - 1);
-                    if (!lastInSeq.getClass().isAssignableFrom(FileModified.class)) {
-                        deleteCreateModifySeqMapper.apply(lastInSeq)
-                            .ifPresent(nextInSeq -> {
-                                if (f.getClass().isAssignableFrom(nextInSeq)) {
-                                    deleteCreateModifyFileSeq.merge(f.file().getName(), List.of(f),
-                                        (oldV, newV) -> {
-                                            List<FileChange> updatedFileChanges = new ArrayList<>();
-                                            updatedFileChanges.addAll(oldV);
-                                            updatedFileChanges.addAll(newV);
-                                            return updatedFileChanges;
-                                        });
-                                }
-                            });
-                    }
+                String fileName = f.file().getName();
+                if(f instanceof FileCreated) {
+                    filenamesToCreate.add(fileName);
                 }
+                else if(f.connectedWithRemoval()) {
+                    filenamesToRemove.add(fileName);
+                }
+                uniqueFiles.add(f);
+
+                filenameWithFileChanges.merge(fileName, List.of(f), (oldFChanges, newFChanges) -> {
+                    List<FileChange> fC = new ArrayList<>();
+                    fC.addAll(oldFChanges);
+                    fC.addAll(newFChanges);
+                    return Collections.unmodifiableList(fC);
+                });
             });
 
-        uniqueFiles.removeAll(deleteCreateModifyFileSeq.entrySet()
-            .stream()
-            .filter(e -> e.getValue().size() == 3)
-            .flatMap(e -> e.getValue().stream())
-            .filter(f -> !(f instanceof FileModified))
-            .collect(Collectors.toList()));
+        List<FileChange> filesToRemove = filesToRemove(filenamesToCreate, filenamesToRemove, filenameWithFileChanges);
 
-        uniqueFiles.removeIf(f -> deleteCreateModifyFileSeq.entrySet().stream().anyMatch(seqEntry ->
-            seqEntry.getValue().size() != 3 && seqEntry.getKey().equals(f.file().getName()) &&
-                !f.connectedWithRemoval()
-        ));
+        uniqueFiles.removeAll(filesToRemove);
 
         return Collections.unmodifiableList(uniqueFiles);
+    }
+
+    private List<FileChange> filesToRemove(List<String> filenamesToCreate, List<String> filenamesToRemove,
+                                           Map<String, List<FileChange>> filenameWithFileChanges) {
+        return filenameWithFileChanges.entrySet()
+            .stream()
+            .flatMap(filenameWithChangesEntry -> {
+                List<FileChange> fChanges = filenameWithChangesEntry.getValue();
+                int sizeOfFChanges = fChanges.size();
+                if (fChanges.get(sizeOfFChanges - 1).connectedWithRemoval()) {
+                    if (filenamesToCreate.contains(filenameWithChangesEntry.getKey())) {
+                        return fChanges.stream();
+                    } else {
+                        return fChanges.subList(0, sizeOfFChanges - 1).stream();
+                    }
+                }
+                if (filenamesToRemove.contains(filenameWithChangesEntry.getKey())) {
+                    return fChanges.stream()
+                        .filter(FileChange::connectedWithRemoval)
+                        .collect(Collectors.toList())
+                        .stream();
+                }
+                return Stream.of();
+            }).collect(Collectors.toList());
     }
 
     @Value
