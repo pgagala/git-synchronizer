@@ -1,24 +1,33 @@
 ![](https://travis-ci.com/pgagala/git-synchronizer.svg?token=jr9dGqtc8QqXdobaunt7&branch=main)
 
-# Why
+# TL;DR
+- synchronize local files to repository
+- needs docker, java > 15
+- required 2 parameters wached paths and link to repository (ssh key needs be added)
+- download from [git-synchronizer-1.0.0.jar](https://github.com/pgagala/git-synchronizer/releases/download/1.0.0/git-synchronizer-1.0.0.jar) 
+- run via `java -jar ./build/libs/git-synchronizer-1.0.0.jar -g git@gitlab.com:myFavGroup/synchronized-notes.git -p /home/pgagala/watched` 
+
+# Why?
 Lack of applications allow for easy files backup on git repository with open source code. 
 (or I haven't searched patiently enough)
 
 
-# What
+# What?
 
 Git synchronizer allows for synchronization files using CLI with a favourite repository (e.g. github, gitlab). 
-Synchronized can be whole folder or particular file. _Recursively synchronization_<sub>1</sub> isn't supported intentionally - 
-user should explicitly pinpoint paths that should be synchronized. Synchronized files are gathered in local synchronized repository (by default somewhere in tmp folder)
+Synchronized can be whole content of a folder or a particular file. Backuped is only flat structure<sub>1</sub> of synchronized paths. Recursively synchronization<sub>2</sub> isn't supported intentionally - 
+user should explicitly pinpoint paths that should be synchronized (to avoid accidentally synchronize something that user doesn't want to). Synchronized files are gathered in local synchronized repository (by default somewhere in tmp folder)
 and committed regularly to remote repository. Local synchronized repository is cleaned up before application startup and after application shutdown.
 Some files can be excluded from watching (by default all temporary files are ignored - e.g. `.sw*`, vi intermediate files).
 Tested both on unix and windows.
 
-_Recursively synchronization_<sub>1</sub> - there are folder _/A_ and folder _/A/B_. Synchronized 
+Flat structure<sub>1</sub> - there is a folder1 with file1 and file2. Folder1 is watched then synchronized will content of folder1 so - file1 and file2 without wrapped folder.
+    
+Recursively synchronization<sub>2</sub> - there are folder _/A_ and folder _/A/B_. Synchronized 
 folder _/A_ make that _/A/B_ will be synchronized as well.
 
 
-# How
+# How?
 
 ## Requirements
 - java >= 15
@@ -76,12 +85,12 @@ Usage: java -jar /home/pgagala/IdeaProjects/git-synchronizer/build/libs/git-sync
 
 Minimum required arguments are **-g** (remote repository where files will be synchronized) and **-p** (watched paths)
 ```
-➜  git-synchronizer git:(main) ✗ java -jar ./build/libs/git-synchronizer-1.0.0.jar -g git@gitlab.com:pgagalaGroup/synchronized-files.git -p /tmp/watched,/tmp/watched/folder1
+➜  git-synchronizer git:(main) ✗ java -jar ./build/libs/git-synchronizer-1.0.0.jar -g git@gitlab.com:myFavGroup/synchronized-notes.git -p /home/pgagala/watched,/home/pgagala/watched/folder1
 06:40:02.171 [main] INFO  i.g.pgagala.gitsynchronizer.Docker - Building git image...
 06:40:02.463 [main] INFO  i.g.pgagala.gitsynchronizer.Docker - Git image built
 06:40:02.469 [main] INFO  i.g.p.g.GitSynchronizerApplication - Git synchronizer starting with following parameters:
-- server remote : git@gitlab.com:pgagalaGroup/synchronized-files.git
-- watching paths: [/tmp/watched, /tmp/watched/folder1]
+- server remote : git@gitlab.com:myFavGroup/synchronized-notes.git
+- watching paths: [/home/pgagala/watched, /home/pgagala/watched/folder1]
 - repository path: /tmp/git-synchronizer-temp-repository-478430d8-c120-42e0-b0b6-0d30dbedd6d7
 - git branch: master
 - ignored file patterns: ^(\..+\.sw.*|\.~.+|.+~)$,^(([4-9]9[1-9][3-9])|([5-9]\d\d\d)|(\d{5,}))$
@@ -96,7 +105,7 @@ After any changes in watched paths:
  
 ```
 06:42:39.331 [file-synchronizer-thread-0] INFO  i.g.p.g.FileSynchronizer - New file changes occurred on watched paths:
-FileChanges(changes=[File created: /tmp/watched/myNewFile, File changed: /tmp/watched/myNewFile])
+FileChanges(changes=[File created: /home/pgagala/watched/myNewFile, File changed: /home/pgagala/watched/myNewFile])
 ```
 
 That will be also reflected in git log in local synchronized repository:
@@ -106,7 +115,7 @@ commit d73d9a6c1fa5d469174195fdfbd11ff41e7074de (HEAD -> master, origin/master)
 Author: git synchronizer <git@synchronizer-ec79682d-b5bd-4c04-a4f3-e5de144c6973.com>
 Date:   Tue May 18 04:42:41 2021 +0000
 
-    File created: /tmp/watched/myNewFile
-    File changed: /tmp/watched/myNewFile
+    File created: /home/pgagala/watched/myNewFile
+    File changed: /home/pgagala/watched/myNewFile
 ```
 
