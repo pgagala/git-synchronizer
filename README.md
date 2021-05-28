@@ -12,7 +12,7 @@ Synchronized can be whole folder or particular file. _Recursively synchronizatio
 user should explicitly pinpoint paths that should be synchronized. Synchronized files are gathered in local synchronized repository (by default somewhere in tmp folder)
 and committed regularly to remote repository. Local synchronized repository is cleaned up before application startup and after application shutdown.
 Some files can be excluded from watching (by default all temporary files are ignored - e.g. `.sw*`, vi intermediate files).
-Tested both on unix and windows.
+Tested both on a unix and windows.
 
 _Recursively synchronization_<sub>1</sub> - there are folder _/A_ and folder _/A/B_. Synchronized 
 folder _/A_ make that _/A/B_ will be synchronized as well.

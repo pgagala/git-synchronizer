@@ -6,7 +6,8 @@ plugins {
 }
 
 group 'org.example'
-version '1.0.0'
+//using semver standard for versioning (https://semver.org/)
+version '1.0.1'
 
 repositories {
     mavenCentral()
