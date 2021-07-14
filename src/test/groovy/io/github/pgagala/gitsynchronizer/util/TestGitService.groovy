@@ -1,5 +1,6 @@
 package io.github.pgagala.gitsynchronizer.util
 
+import io.github.pgagala.gitsynchronizer.Docker
 import io.github.pgagala.gitsynchronizer.Environment
 import io.github.pgagala.gitsynchronizer.GitBranch
 import io.github.pgagala.gitsynchronizer.GitRepositoryLocal
@@ -45,7 +46,7 @@ class TestGitService {
                 "${location.getPath()}:/git".toString(),
                 "-v",
                 "${Environment.getUserHome()}/.ssh:/root/.ssh".toString(),
-                "git"
+                Docker.GIT_IMAGE
         ]
     }
 }

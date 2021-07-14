@@ -18,11 +18,12 @@ import java.util.List;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 class Docker {
 
+    public static final String GIT_IMAGE = "alpine/git:user";
     private static final int MAX_PULL_AMOUNT = 10;
 
     static Response pullDockerGitImage() throws InterruptedException {
         return new ProcessExecutor(new File("./"))
-            .execute(List.of("docker", "pull", "alpine/git:user"), "pull git docker image");
+            .execute(List.of("docker", "pull", GIT_IMAGE), "pull git docker image");
     }
 
     static void pullDockerGitImageOrThrowException() throws InterruptedException {
@@ -35,12 +36,12 @@ class Docker {
                 log.info("Git image pulled");
                 return;
             } else {
-                log.info("Error during pulling docker git image for {}/{} time: {}.", pullAttempt, MAX_PULL_AMOUNT, response.toString());
+                log.info("Error during pulling docker git image for {}/{} time: {}.", pullAttempt, MAX_PULL_AMOUNT, response);
             }
             pullAttempt++;
             Thread.sleep(2000);
         }
-        String errorMsg = String.format("Cannot pull docker git image: %s. Please try manually pull that image (docker pull alpine/git:user)", response.toString());
+        String errorMsg = String.format("Cannot pull docker git image: %s. Please try manually pull that image (docker pull %s)", response, GIT_IMAGE);
         throw new IllegalStateException(errorMsg);
     }
 }
