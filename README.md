@@ -4,8 +4,8 @@
 - synchronizes local files to repository
 - needs docker, java > 15
 - requires 2 parameters - watched paths and link to repository (ssh key needs be added)
-- can be download from [git-synchronizer-1.0.1.jar](https://github.com/pgagala/git-synchronizer/releases/download/1.0.1/git-synchronizer-1.0.1.jar) 
-- run via `java -jar git-synchronizer-1.0.1.jar -g git@gitlab.com:myFavGroup/synchronized-notes.git -p /home/pgagala/watched,/home/pgagala/watched2/file` 
+- can be download from [git-synchronizer-1.0.2.jar](https://github.com/pgagala/git-synchronizer/releases/download/1.0.2/git-synchronizer-1.0.2.jar) 
+- run via `java -jar git-synchronizer-1.0.2.jar -g git@gitlab.com:myFavGroup/synchronized-notes.git -p /home/pgagala/watched,/home/pgagala/watched2/file` 
 
 # Why?
 Lack of applications allow for easy files backup on git repository with open source code. 
@@ -36,7 +36,7 @@ folder _/A_ make that _/A/B_ will be synchronized as well.
 ## Installation
 
 1) Download jar from releases section:
-    - [git-synchronizer-1.0.1.jar](https://github.com/pgagala/git-synchronizer/releases/download/1.0.0/git-synchronizer-1.0.1.jar) 
+    - [git-synchronizer-1.0.2.jar](https://github.com/pgagala/git-synchronizer/releases/download/1.0.2/git-synchronizer-1.0.2.jar) 
     or
     - build jar by yourself (`./gradlew clean build shadowJar`)
 
@@ -53,8 +53,8 @@ folder _/A_ make that _/A/B_ will be synchronized as well.
 ## Available options
 
 ```
-➜  git-synchronizer git:(main) ✗ java -jar ./build/libs/git-synchronizer-1.0.1.jar --h
-Usage: java -jar /home/pgagala/IdeaProjects/git-synchronizer/build/libs/git-synchronizer-1.0.1.jar 
+➜  git-synchronizer git:(main) ✗ java -jar ./build/libs/git-synchronizer-1.0.2.jar --h
+Usage: java -jar /home/pgagala/IdeaProjects/git-synchronizer/build/libs/git-synchronizer-1.0.2.jar 
       [options] 
   Options:
     --branch, -b
@@ -85,7 +85,7 @@ Usage: java -jar /home/pgagala/IdeaProjects/git-synchronizer/build/libs/git-sync
 
 Minimum required arguments are **-g** (remote repository where files will be synchronized) and **-p** (watched paths)
 ```
-➜  git-synchronizer git:(main) ✗ java -jar ./build/libs/git-synchronizer-1.0.1.jar -g git@gitlab.com:myFavGroup/synchronized-notes.git -p /home/pgagala/watched,/home/pgagala/watched/folder1
+➜  git-synchronizer git:(main) ✗ java -jar ./build/libs/git-synchronizer-1.0.2.jar -g git@gitlab.com:myFavGroup/synchronized-notes.git -p /home/pgagala/watched,/home/pgagala/watched/folder1
 06:40:02.171 [main] INFO  i.g.pgagala.gitsynchronizer.Docker - Building git image...
 06:40:02.463 [main] INFO  i.g.pgagala.gitsynchronizer.Docker - Git image built
 06:40:02.469 [main] INFO  i.g.p.g.GitSynchronizerApplication - Git synchronizer starting with following parameters:
